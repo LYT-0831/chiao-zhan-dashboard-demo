@@ -56,7 +56,7 @@ main{padding:14px 12px 40px}.block{background:#fff;border:1px solid var(--line);
 }
 
 </style></head><body>
-<header><div class="wrap"><div class="brand-row"><div class="brand">巧展實業｜董事長營運洞察</div><div class="badge" id="sourceBadge">動態管線接入版｜最新 2026/09/13</div></div><h1 id="title"></h1><div class="period" id="period"></div><div class="controls"><div class="datebox"><button id="prevBtn">‹</button><input id="datePicker" type="date"><span id="weekdayBadge" class="weekday-badge weekday"></span><button id="nextBtn">›</button></div><div class="switch"><button class="mode active" data-mode="day">日</button><button class="mode" data-mode="week">週</button><button class="mode" data-mode="month">月</button><button class="mode" data-mode="ytd">YTD</button></div></div><div class="data-note" id="dataNote"></div><div class="data-note" id="sourceStatusBar" style="display:flex;gap:14px;flex-wrap:wrap;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;font-size:12px;"><span>📦 <b>訂單資料：</b>更新至 <b id="statOrdersDate">2026/09/13</b></span><span>✍️ <b>每日簽核：</b>更新至 <b id="statSignDate">2026/09/13</b></span><span>📑 <b>正式營業實績：</b>更新至 <b id="statActualDate">8 月</b>（正式月報）</span><span>⚙️ <b>設備實際產量：</b>更新至 <b id="statEquipDate">8 月</b>（正式月報）</span></div><div class="nav"><a href="#summary">本期先看</a><a href="#indicatorMap">七指標</a><a href="#overview">摘要</a><a href="#machine">設備</a><a href="#signoff">簽核</a><a href="#target">目標</a><a href="#customer">核心客戶</a><a href="#new">新客</a><a href="#dormant">舊客</a><a href="#shipment">未出貨</a><a href="#product">產品</a><a href="#dong">東澤</a><a href="#productOrders">製品訂購</a></div></div></header>
+<header><div class="wrap"><div class="brand-row"><div class="brand">巧展實業｜董事長營運洞察</div><div class="badge" id="sourceBadge">動態管線接入版｜最新 2026/09/13</div></div><h1 id="title"></h1><div class="period" id="period"></div><div class="controls"><div class="datebox"><button id="prevBtn">‹</button><input id="datePicker" type="date"><span id="weekdayBadge" class="weekday-badge weekday"></span><button id="nextBtn">›</button></div><div class="switch"><button class="mode active" data-mode="day">日</button><button class="mode" data-mode="week">週</button><button class="mode" data-mode="month">月</button><button class="mode" data-mode="ytd">YTD</button></div></div><div class="data-note" id="dataNote"></div><div class="data-note" id="sourceStatusBar" style="display:flex;gap:14px;flex-wrap:wrap;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;font-size:12px;"><span>📦 <b>訂單資料：</b>更新至 <b id="statOrdersDate">2026/09/13</b></span><span>✍️ <b>每日簽核：</b>更新至 <b id="statSignDate">2026/09/13</b></span><span>📑 <b>正式營業實績：</b>更新至 <b id="statActualDate">8 月</b>（正式月報）</span><span>⚙️ <b>設備實際產量：</b>更新至 <b id="statEquipDate">8 月</b>（正式月報）</span></div><div class="nav"><a href="#summary">本期先看</a><a href="#indicatorMap">七指標</a><a href="#overview">摘要</a><a href="#machine">設備</a><a href="#signoff">簽核</a><a href="#target">目標</a><a href="#customer">核心客戶</a><a href="#new">新客</a><a href="#dormant">舊客</a><a href="#shipment">未出貨</a><a href="#product">產品</a><a href="#dong">東澤物料</a><a href="#productOrders">東澤製品</a></div></div></header>
 <main class="wrap">
 <section class="block" id="summary"><div class="block-title">本期先看</div><div class="content" id="summaryContent"></div></section>
 
@@ -98,8 +98,8 @@ main{padding:14px 12px 40px}.block{background:#fff;border:1px solid var(--line);
 <section class="block" id="signoff"><div class="block-title purplebar">工作站流程簽核（每日簽核規格定案）</div><div class="content" id="signoffContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="signoff">查看改善方式</button></div></section>
 <section class="block" id="machine"><div class="block-title bluebar">生產與設備</div><div class="content" id="machineContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="equipment">查看改善方式</button></div></section>
 <section class="block" id="product"><div class="block-title greenbar">產品結構與毛利</div><div class="content" id="productContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="product">查看改善方式</button></div></section>
-<section class="block" id="dong"><div class="block-title purplebar">東澤指定客戶物料單追蹤（定案規格）</div><div class="content" id="dongContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="product">查看改善方式</button></div></section>
-<section class="block" id="productOrders"><div class="block-title bluebar">製品訂購單分析（定案規格）</div><div class="content" id="productOrdersContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="product">查看改善方式</button></div></section>
+<section class="block" id="dong"><div class="block-title purplebar">東澤指定客戶物料單追蹤（定案規格）</div><div class="content" id="dongContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="dong">查看改善方式</button></div></section>
+<section class="block" id="productOrders"><div class="block-title bluebar">東澤指定客戶製品訂購單追蹤（定案規格）</div><div class="content" id="productOrdersContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="dongProduct">查看改善方式</button></div></section>
 <div class="footer">訂單與每日簽核：最新至 2026/09/13｜巧展管理月採 26–25｜正式月報（營業實績、目標、設備、生產）提供至 2026 年 8 月，不以訂單自行推估</div>
 </main>
 <script>
@@ -485,7 +485,7 @@ function render(){
       let cuUnits=Object.entries(c.units||{}).map(([u,q])=>`${fmt(q)} ${u}`).join(' + ');
       return `<tr><td>${c.name}</td><td class="num">${fmt(c.net)}</td><td class="num hide-mobile">${fmt(c.margin)}</td><td class="num">${c.gm!=null?c.gm.toFixed(2)+'%':'-'}</td><td class="num">${cuUnits||'-'}</td></tr>`;
     }).join('');
-    $('dongContent').innerHTML=`<div class="kpis"><div class="kpi"><small>訂購數量</small><b class="purple">${dzOrdUnits}</b>${pd?trend(dz.qty,pd.qty,'pct',compareLabel):''}<div class="note">已出貨：${dzShpUnits}（${wan(dz.shippedNet||0)}）</div></div><div class="kpi"><small>銷售總額</small><b class="blue">${wan(dz.sales)}</b>${pd?trend(dz.sales,pd.sales,'pct',compareLabel):''}<div class="note">交易客戶 ${dz.customers} 戶、訂單 ${dz.orders} 單</div></div><div class="kpi"><small>毛利</small><b class="green">${wan(dz.margin)}</b>${pd?trend(dz.margin,pd.margin,'pct',compareLabel):''}</div><div class="kpi"><small>毛利率</small><b class="orange">${dz.gm!=null?dz.gm.toFixed(2)+'%':'-'}</b>${pd?trend(dz.gm,pd.gm,'pp',compareLabel):''}</div></div><div class="callout"><b>正式追蹤口徑：</b>物料訂購單；中類＝東澤、東澤特規、東澤特規+；依東澤分析檔指定客戶範圍。出貨僅採計至查詢截止日。日／週／月／YTD 皆會依訂購日期重新彙總。</div>${dzCustRows?`<table><thead><tr><th>東澤指定客戶</th><th class="num">銷售總額</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th><th class="num">數量</th></tr></thead><tbody>${dzCustRows}</tbody></table>`:''}`;
+    $('dongContent').innerHTML=`<div class="kpis"><div class="kpi"><small>訂購數量</small><b class="purple">${dzOrdUnits}</b>${pd?trend(dz.qty,pd.qty,'pct',compareLabel):''}<div class="note">已出貨：${dzShpUnits}（${wan(dz.shippedNet||0)}）</div></div><div class="kpi"><small>訂單淨額</small><b class="blue">${wan(dz.sales)}</b>${pd?trend(dz.sales,pd.sales,'pct',compareLabel):''}<div class="note">交易客戶 ${dz.customers} 戶、訂單 ${dz.orders} 單</div></div><div class="kpi"><small>毛利</small><b class="green">${wan(dz.margin)}</b>${pd?trend(dz.margin,pd.margin,'pct',compareLabel):''}</div><div class="kpi"><small>毛利率</small><b class="orange">${dz.gm!=null?dz.gm.toFixed(2)+'%':'-'}</b>${pd?trend(dz.gm,pd.gm,'pp',compareLabel):''}</div></div><div class="callout"><b>正式追蹤口徑：</b>物料訂購單；中類＝東澤、東澤特規、東澤特規+；依東澤分析檔 7 區客戶範圍（桃J排除9戶，無汐止排除）。銷售以淨額為主。出貨僅採計至查詢截止日。日／週／月／YTD 皆會依訂購日期重新彙總。</div>${dzCustRows?`<table><thead><tr><th>東澤指定客戶</th><th class="num">訂單淨額</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th><th class="num">數量</th></tr></thead><tbody>${dzCustRows}</tbody></table>`:''}`;
   }
 
   let po=s.productOrders;
@@ -500,7 +500,7 @@ function render(){
       let cuUnits=Object.entries(c.units||{}).map(([u,q])=>`${fmt(q)} ${u}`).join(' + ');
       return `<tr><td>${c.name}</td><td class="num">${fmt(c.net)}</td><td class="num hide-mobile">${fmt(c.margin)}</td><td class="num">${c.gm!=null?c.gm.toFixed(2)+'%':'-'}</td><td class="num">${cuUnits||'-'}</td></tr>`;
     }).join('');
-    $('productOrdersContent').innerHTML=`<div class="kpis"><div class="kpi"><small>訂購數量（片／個分開）</small><b class="blue">${ordUnitsStr}</b>${ppo?trend(po.orders,ppo.orders,'pct',compareLabel):''}<div class="note">訂單 ${fmt(po.orders)} 單／明細 ${fmt(po.lines)} 筆</div></div><div class="kpi"><small>出貨數量（截至本期）</small><b class="green">${shpUnitsStr}</b><div class="note">出貨總額 ${wan(po.shippedNet)}</div></div><div class="kpi"><small>訂單淨額</small><b class="blue">${wan(po.net)}</b>${ppo?trend(po.net,ppo.net,'pct',compareLabel):''}<div class="note">交易客戶 ${fmt(po.customers)} 戶</div></div><div class="kpi"><small>毛利率</small><b class="${po.gm!=null&&po.gm<15?'orange':'green'}">${po.gm!=null?po.gm.toFixed(2)+'%':'-'}</b>${ppo&&ppo.gm!=null&&po.gm!=null?trend(po.gm,ppo.gm,'pp',compareLabel):''}<div class="note">毛利 ${wan(po.margin)}</div></div></div><div class="callout"><b>定案規格遵循：</b>出貨事件僅採計實際出貨日 &le; 查詢截止日者；查詢截止日之後之出貨不回填歷史狀態。數量單位「片」與「個」嚴格分開統計。${missingRows>0?`原始出貨數量／總額空白計 <b>${missingRows}</b> 筆，保留缺值狀態不補零。`:'本期無出貨空白缺值筆數。'}保留原始來源毛利，不擅自覆寫。</div>${custRows?`<table><thead><tr><th>主要製品客戶</th><th class="num">訂單淨額</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th><th class="num">數量</th></tr></thead><tbody>${custRows}</tbody></table>`:'<div class="note" style="margin-top:8px">所選期間無製品訂購客戶明細。</div>'}<div class="manage"><b>管理用途：</b>製品訂購單分析獨立追蹤壓克力加工製品之接單與實際出貨進度；單位依「片」與「個」分離，避免混用。</div>`;
+    $('productOrdersContent').innerHTML=`<div class="kpis"><div class="kpi"><small>訂購數量（片／個分開）</small><b class="blue">${ordUnitsStr}</b>${ppo?trend(po.orders,ppo.orders,'pct',compareLabel):''}<div class="note">訂單 ${fmt(po.orders)} 單／明細 ${fmt(po.lines)} 筆</div></div><div class="kpi"><small>出貨數量（截至本期）</small><b class="green">${shpUnitsStr}</b><div class="note">出貨總額 ${wan(po.shippedNet)}</div></div><div class="kpi"><small>訂單淨額</small><b class="blue">${wan(po.net)}</b>${ppo?trend(po.net,ppo.net,'pct',compareLabel):''}<div class="note">交易客戶 ${fmt(po.customers)} 戶</div></div><div class="kpi"><small>毛利率</small><b class="${po.gm!=null&&po.gm<15?'orange':'green'}">${po.gm!=null?po.gm.toFixed(2)+'%':'-'}</b>${ppo&&ppo.gm!=null&&po.gm!=null?trend(po.gm,ppo.gm,'pp',compareLabel):''}<div class="note">毛利 ${wan(po.margin)}</div></div></div><div class="callout"><b>定案規格遵循：</b>出貨事件僅採計實際出貨日 &le; 查詢截止日者；查詢截止日之後之出貨不回填歷史狀態。數量單位「片」與「個」嚴格分開統計。${missingRows>0?`原始出貨數量／總額空白計 <b>${missingRows}</b> 筆，保留缺值狀態不補零。`:'本期無出貨空白缺值筆數。'}保留原始來源毛利，不擅自覆寫。</div>${custRows?`<table><thead><tr><th>主要製品客戶</th><th class="num">訂單淨額</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th><th class="num">數量</th></tr></thead><tbody>${custRows}</tbody></table>`:'<div class="note" style="margin-top:8px">所選期間無製品訂購客戶明細。</div>'}<div class="manage"><b>管理用途：</b>東澤指定客戶製品訂購單追蹤</div>`;
   }
 }
 const picker=$('datePicker');
@@ -657,6 +657,38 @@ const IMPROVE={
       '異常判定':['同時看銷售額與毛利率','注意單月資料偏差','不可只因毛利率高就直接推廣'],
       '原因分類':['售價折讓或成本上升','大客戶壓價','品項組合改變或分類差異'],
       '管理處置':['高銷售低毛利→查價／成本','低銷售高毛利→試推廣','低銷售低毛利→檢討保留']
+    }
+  },
+  dong:{
+    title:'東澤物料｜指定客戶物料單追蹤',
+    subtitle:'依分區、中類、指定客戶與出貨進度落實追蹤',
+    steps:[
+      ['分區檢視','依 7 區（A、C、D、G、J、中I、省區）檢視訂購片數、淨額與毛利率差異。'],
+      ['品類分流','區分「東澤」、「東澤特規」、「東澤特規+」三類規格結構與單價變化。'],
+      ['客戶排行','按東澤分析範圍淨額由高至低排列 80 戶客戶，標記零分母與異動。'],
+      ['出貨追蹤','恪遵事件日期規格，核對各案已出貨與待出貨進度。'],
+      ['業務確認','針對毛利率偏低、未出貨長等待或未續購客戶進行線下確認。']
+    ],
+    rules:{
+      '範圍口徑':['物料訂購單專用','中類限定三類','依 7 區文字過濾並嚴格排除桃 J 9 戶','不添加汐止區排除'],
+      '數據規格':['以淨額為主保留總額','毛利沿用來源欄位','零分母毛利率顯示不適用（N/A）','同額採並列排名'],
+      '管理處置':['東澤分析範圍合計獨立追蹤','出貨事件依查詢截止日嚴格判讀','業務 7 日內確認異常訂單']
+    }
+  },
+  dongProduct:{
+    title:'東澤指定客戶製品訂購單追蹤',
+    subtitle:'掌握壓克力加工製品之接單、客戶與實際出貨進度',
+    steps:[
+      ['結構掌握','掌握製品訂購數量（片／個嚴格分開統計）與實際出貨進度。'],
+      ['品類分析','檢視東澤、製品、東澤特規等 6 大中類之規模與毛利率結構。'],
+      ['客戶排行','依訂單淨額檢視主要製品客戶，標註片／個數量分佈與毛利。'],
+      ['出貨核對','恪遵事件日期規格，核對各案截至查詢日之已出貨與待出貨進度。'],
+      ['管理追蹤','針對毛利率偏低或未出貨案件，由業務與窗口持續跟催。']
+    ],
+    rules:{
+      '範圍口徑':['訂購單別＝製品訂購單','中類限定 6 類','依東澤分析檔 7 區客戶範圍（桃J排除9戶，無汐止排除）'],
+      '數據規格':['數量單位「片」與「個」嚴格分開統計，絕不加總','以淨額為主保留毛利','出貨事件恪遵實際出貨日 <= 查詢截止日'],
+      '管理處置':['獨立專區追蹤，不顯示 07 產品結構大類/中類下鑽','依客戶與訂單持續追蹤交付進度']
     }
   }
 };
@@ -1675,18 +1707,873 @@ function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, e
   </div>`;
 }
 
+function getDongDecision(summaryObj){
+ const s=summaryObj.s;
+ const mk=mgmtKey(s.end);
+ const annual=(mode==='ytd');
+ const scope=annual?'YTD':mk+' 管理月';
+ const dzSource=(typeof DONG_DRILLDOWN!=='undefined'?DONG_DRILLDOWN:(typeof window!=='undefined'?window.DONG_DRILLDOWN:null))||{};
+ const dPool=dzSource[annual?'ytd':'month']||{};
+ const curData=dPool[mk]||dPool['2026-08']||{};
+ const net=curData.totalNet!=null?curData.totalNet:(s.dong?.sales||0);
+ const margin=curData.totalMargin!=null?curData.totalMargin:(s.dong?.margin||0);
+ const gm=curData.totalGm!=null?curData.totalGm:(s.dong?.gm||0);
+ const qty=curData.totalQty!=null?curData.totalQty:(s.dong?.qty||0);
+ const shippedQty=curData.shippedQty||0;
+ const shippedNet=curData.shippedNet||0;
+ const shippedRate=curData.shippedRate||0;
+ const clients=curData.clients||[];
+ const lowGmClients=clients.filter(c=>c.net>0&&c.gm!=null&&c.gm<12);
+
+ return {
+  id:'dong',
+  title:'東澤物料｜指定客戶物料單追蹤與分區毛利檢視',
+  evidence:`${scope}東澤分析範圍合計淨額 ${money(net)}，毛利 ${money(margin)}（毛利率 ${gm.toFixed(2)}%）；訂購數量 ${fmt(qty)} 片，已出貨 ${fmt(shippedQty)} 片（出貨達成率 ${shippedRate.toFixed(1)}%）。`,
+  action:'依 7 區與 3 大中類檢視採購與出貨進度；對低於目標毛利或未出貨之案件，逐戶確認規格、折讓與排程。',
+  owner:'東澤專案業務主管＋出貨窗口',
+  check:'建議 7 日內確認待出貨案件及低毛利訂單原因；次月追蹤分區出貨達成率與毛利率穩定度。',
+  missing:'限定物料訂購單與 7 區特定客戶名單（桃J排除9戶，無汐止排除）；出貨採計至查詢截止日。零淨額訂單毛利率標示為不適用。',
+  rows:lowGmClients.slice(0,5).map(c=>[c.name,money(c.net)+' / '+fmt(c.qty)+' 片',(c.gm!=null?c.gm.toFixed(2)+'%':'不適用')+`（毛利 ${money(c.margin)}）`]),
+  headers:['查核客戶','訂單淨額 / 數量','毛利率 / 毛利額'],
+  drillMonth:mk,
+  cutoffDate:s.end
+ };
+}
+
+function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全部', activeTab='regions', sortKey='net', searchKey=''){
+ const annual=(mode==='ytd');
+ const scopeName=annual?'2026 YTD':`${drillMonth} 管理月`;
+ const dzSource=(typeof DONG_DRILLDOWN!=='undefined'?DONG_DRILLDOWN:(typeof window!=='undefined'?window.DONG_DRILLDOWN:null))||{};
+ const dPool=dzSource[annual?'ytd':'month']||{};
+ const cur=dPool[drillMonth]||dPool['2026-08']||null;
+
+ if(!cur){
+  return `<div class="warn">目前期間（${scopeName}）尚無東澤物料詳細分析資料。</div>`;
+ }
+
+ const kpiSectionHtml=`
+  <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:16px;">
+    <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">東澤範圍訂購數量</div>
+      <div style="font-size:22px;font-weight:bold;color:#153e72;margin:4px 0;">${fmt(cur.totalQty)} <span style="font-size:14px;">片</span></div>
+      <div style="font-size:11px;color:#64748b;">明細 ${fmt(cur.lineCount)} 筆｜訂單 ${fmt(cur.orderCount)} 單</div>
+    </div>
+    <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">東澤分析範圍淨額</div>
+      <div style="font-size:22px;font-weight:bold;color:#153e72;margin:4px 0;">${money(cur.totalNet)}</div>
+      <div style="font-size:11px;color:#64748b;">交易客戶 ${cur.customerCount} 戶｜總額 ${money(cur.totalGross)}</div>
+    </div>
+    <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">毛利額與毛利率</div>
+      <div style="font-size:22px;font-weight:bold;color:#16805a;margin:4px 0;">${money(cur.totalMargin)}</div>
+      <div style="font-size:11px;color:#64748b;">毛利率 <b style="color:#d97706;">${cur.totalGm!=null?cur.totalGm.toFixed(2)+'%':'-'}</b>｜成本 ${money(cur.totalCost)}</div>
+    </div>
+    <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">出貨進度（至 ${esc(cutoffDate)}）</div>
+      <div style="font-size:22px;font-weight:bold;color:#0284c7;margin:4px 0;">${fmt(cur.shippedQty)} <span style="font-size:14px;">片</span> <span style="font-size:14px;color:#64748b;">(${cur.shippedRate.toFixed(1)}%)</span></div>
+      <div style="font-size:11px;color:#64748b;">出貨金額 ${money(cur.shippedNet)}｜待出貨 ${fmt(cur.totalQty-cur.shippedQty)} 片</div>
+    </div>
+  </div>
+ `;
+
+ const tabs=[
+  {key:'regions',label:'7 區分區分析'},
+  {key:'categories',label:'3 大中類結構'},
+  {key:'clients',label:`客戶排行名單 (${cur.clients.length} 戶)`},
+  {key:'shipments',label:`出貨與待出貨追蹤 (${cur.unshippedOrders.length} 單待出貨)`}
+ ];
+
+ const tabBtnsHtml=tabs.map(t=>{
+  const isActive=(activeTab===t.key);
+  return `<button type="button" class="dong-tab-btn" data-dong-tab="${t.key}" style="padding:8px 16px;font-size:13px;font-weight:bold;border-radius:6px;border:1px solid ${isActive?'#6366f1':'#cbd5e1'};background:${isActive?'#6366f1':'#fff'};color:${isActive?'#fff':'#334155'};cursor:pointer;">${t.label}</button>`;
+ }).join('');
+
+ const tabBarHtml=`
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;border-bottom:2px solid #e2e8f0;padding-bottom:10px;">
+    ${tabBtnsHtml}
+  </div>
+ `;
+
+ let tabContentHtml='';
+
+ if(activeTab==='regions'){
+  const regCardsHtml=cur.regions.map(r=>{
+   return `
+    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:15px;font-weight:bold;color:#1e293b;">${esc(r.region)}</span>
+        <span class="badge" style="background:#e0e7ff;color:#4338ca;font-size:11px;padding:2px 6px;border-radius:4px;">佔比 ${r.share}%</span>
+      </div>
+      <div style="font-size:18px;font-weight:bold;color:#153e72;margin-bottom:4px;">${money(r.net)}</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:8px;">毛利 ${money(r.margin)}｜毛利率 <b style="color:${r.gm<12?'#ea580c':'#16a34a'}">${r.gm.toFixed(2)}%</b></div>
+      <div style="font-size:12px;color:#475569;margin-bottom:8px;border-top:1px dashed #e2e8f0;padding-top:6px;">
+        訂購 <b>${fmt(r.qty)}</b> 片｜已出貨 <b>${fmt(r.shippedQty)}</b> 片 (${r.shippedRate.toFixed(1)}%)
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#64748b;">
+        <span>客戶 ${r.customerCount} 戶｜訂單 ${r.orderCount} 單</span>
+        <button type="button" data-dong-reg="${r.region}" style="background:none;border:none;color:#6366f1;font-weight:bold;cursor:pointer;padding:0;font-size:11px;">查看客戶 &rarr;</button>
+      </div>
+    </div>
+   `;
+  }).join('');
+
+  const regTableRows=cur.regions.map(r=>`
+    <tr>
+      <td><b>${esc(r.region)}</b></td>
+      <td class="num">${fmt(r.qty)} 片</td>
+      <td class="num">${fmt(r.shippedQty)} 片</td>
+      <td class="num" style="color:${r.shippedRate>=99?'#16a34a':'#0284c7'};font-weight:bold;">${r.shippedRate.toFixed(1)}%</td>
+      <td class="num" style="font-weight:bold;color:#153e72;">${money(r.net)}</td>
+      <td class="num">${r.share}%</td>
+      <td class="num hide-mobile">${money(r.margin)}</td>
+      <td class="num" style="color:${r.gm<12?'#ea580c':'#16a34a'};font-weight:bold;">${r.gm.toFixed(2)}%</td>
+      <td class="num hide-mobile">${r.orderCount} 單</td>
+      <td class="num hide-mobile">${r.customerCount} 戶</td>
+    </tr>
+  `).join('');
+
+  tabContentHtml=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;">
+      ${regCardsHtml}
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>分區名稱</th>
+            <th class="num">訂購數量</th>
+            <th class="num">已出貨數量</th>
+            <th class="num">出貨達成率</th>
+            <th class="num">訂單淨額</th>
+            <th class="num">營收佔比</th>
+            <th class="num hide-mobile">毛利</th>
+            <th class="num">毛利率</th>
+            <th class="num hide-mobile">訂單數</th>
+            <th class="num hide-mobile">客戶數</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${regTableRows}
+        </tbody>
+        <tfoot>
+          <tr style="font-weight:bold;background:#f8fafc;">
+            <td>東澤分析範圍合計</td>
+            <td class="num">${fmt(cur.totalQty)} 片</td>
+            <td class="num">${fmt(cur.shippedQty)} 片</td>
+            <td class="num">${cur.shippedRate.toFixed(1)}%</td>
+            <td class="num" style="color:#153e72;">${money(cur.totalNet)}</td>
+            <td class="num">100.0%</td>
+            <td class="num hide-mobile">${money(cur.totalMargin)}</td>
+            <td class="num">${cur.totalGm!=null?cur.totalGm.toFixed(2)+'%':'-'}</td>
+            <td class="num hide-mobile">${cur.orderCount} 單</td>
+            <td class="num hide-mobile">${cur.customerCount} 戶</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+ }
+
+ if(activeTab==='categories'){
+  const catCardsHtml=cur.categories.map(c=>{
+   return `
+    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:16px;font-weight:bold;color:#1e293b;">${esc(c.category)}</span>
+        <span class="badge" style="background:#f1f5f9;color:#475569;font-size:11px;padding:2px 6px;border-radius:4px;">佔比 ${c.share}%</span>
+      </div>
+      <div style="font-size:20px;font-weight:bold;color:#153e72;margin-bottom:4px;">${money(c.net)}</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:8px;">毛利 ${money(c.margin)}｜毛利率 <b style="color:#16a34a;">${c.gm.toFixed(2)}%</b></div>
+      <div style="font-size:12px;color:#475569;border-top:1px dashed #e2e8f0;padding-top:6px;">
+        訂購 <b>${fmt(c.qty)}</b> 片｜平均單價 <b>${fmt(c.avgPrice)} 元/片</b>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-top:6px;">
+        客戶 ${c.customerCount} 戶｜訂單 ${c.orderCount} 單
+      </div>
+    </div>
+   `;
+  }).join('');
+
+  const catTableRows=cur.categories.map(c=>`
+    <tr>
+      <td><b>${esc(c.category)}</b></td>
+      <td class="num">${fmt(c.qty)} 片</td>
+      <td class="num">${fmt(c.avgPrice)} 元</td>
+      <td class="num" style="font-weight:bold;color:#153e72;">${money(c.net)}</td>
+      <td class="num">${c.share}%</td>
+      <td class="num hide-mobile">${money(c.margin)}</td>
+      <td class="num" style="font-weight:bold;color:#16a34a;">${c.gm.toFixed(2)}%</td>
+      <td class="num hide-mobile">${c.orderCount} 單</td>
+      <td class="num hide-mobile">${c.customerCount} 戶</td>
+    </tr>
+  `).join('');
+
+  tabContentHtml=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:16px;">
+      ${catCardsHtml}
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>中類名稱</th>
+            <th class="num">訂購數量</th>
+            <th class="num">平均單價</th>
+            <th class="num">訂單淨額</th>
+            <th class="num">營收佔比</th>
+            <th class="num hide-mobile">毛利</th>
+            <th class="num">毛利率</th>
+            <th class="num hide-mobile">訂單數</th>
+            <th class="num hide-mobile">客戶數</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${catTableRows}
+        </tbody>
+        <tfoot>
+          <tr style="font-weight:bold;background:#f8fafc;">
+            <td>中類合計</td>
+            <td class="num">${fmt(cur.totalQty)} 片</td>
+            <td class="num">${fmt(cur.totalQty?Math.round(cur.totalNet/cur.totalQty):0)} 元</td>
+            <td class="num" style="color:#153e72;">${money(cur.totalNet)}</td>
+            <td class="num">100.0%</td>
+            <td class="num hide-mobile">${money(cur.totalMargin)}</td>
+            <td class="num">${cur.totalGm!=null?cur.totalGm.toFixed(2)+'%':'-'}</td>
+            <td class="num hide-mobile">${cur.orderCount} 單</td>
+            <td class="num hide-mobile">${cur.customerCount} 戶</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+ }
+
+ if(activeTab==='clients'){
+  let filteredClients=[...cur.clients];
+  if(filterRegion!=='全部'){
+   filteredClients=filteredClients.filter(c=>c.region===filterRegion);
+  }
+  if(searchKey){
+   filteredClients=filteredClients.filter(c=>c.name.toLowerCase().includes(searchKey));
+  }
+
+  if(sortKey==='net'){
+   filteredClients.sort((a,b)=>b.net-a.net);
+  }else if(sortKey==='gm'){
+   filteredClients.sort((a,b)=>{
+    const ga=a.gm!=null?a.gm:-999;
+    const gb=b.gm!=null?b.gm:-999;
+    return gb-ga;
+   });
+  }else if(sortKey==='qty'){
+   filteredClients.sort((a,b)=>b.qty-a.qty);
+  }
+
+  const regOptions=['全部','A區','C區','D區','G區','J區','中I','省區'].map(r=>{
+   return `<option value="${r}" ${filterRegion===r?'selected':''}>${r}</option>`;
+  }).join('');
+
+  const clientRows=filteredClients.map(c=>{
+   const gmBadge=(c.gm===null)?'<span class="badge" style="background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:4px;font-size:11px;">不適用</span>':`<span style="font-weight:bold;color:${c.gm<12?'#ea580c':'#16a34a'}">${c.gm.toFixed(2)}%</span>`;
+
+   const topCatStr=Object.entries(c.catBreakdown||{}).map(([cat,val])=>`${cat}: ${money(val)}`).join(', ');
+
+   return `
+    <tr>
+      <td style="font-weight:bold;color:#64748b;">${c.rank}</td>
+      <td><b>${esc(c.name)}</b></td>
+      <td><span class="badge" style="background:#e0e7ff;color:#4338ca;padding:2px 6px;border-radius:4px;font-size:11px;">${esc(c.region)}</span></td>
+      <td class="hide-mobile">${esc(c.salesPerson)}</td>
+      <td class="num" style="font-weight:bold;color:#153e72;">${money(c.net)}</td>
+      <td class="num">${c.share}%</td>
+      <td class="num">${fmt(c.qty)} 片</td>
+      <td class="num">${fmt(c.shippedQty)} 片</td>
+      <td class="num hide-mobile">${money(c.margin)}</td>
+      <td class="num">${gmBadge}</td>
+      <td class="hide-mobile" style="font-size:11px;color:#64748b;">${esc(topCatStr||'-')}</td>
+    </tr>
+   `;
+  }).join('');
+
+  tabContentHtml=`
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;background:#f8fafc;border:1px solid #e2e8f0;padding:8px 12px;border-radius:6px;">
+      <label style="font-size:12px;font-weight:bold;color:#334155;">分區篩選：
+        <select id="dongRegionSelect" style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:12px;">
+          ${regOptions}
+        </select>
+      </label>
+      <label style="font-size:12px;font-weight:bold;color:#334155;">搜尋客戶：
+        <input type="text" id="dongClientSearch" placeholder="輸入關鍵字..." value="${esc(searchKey)}" style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:12px;width:140px;">
+      </label>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+        <span style="font-size:12px;color:#64748b;">排序方式：</span>
+        <button type="button" data-dong-sort="net" style="padding:4px 8px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;background:${sortKey==='net'?'#153e72':'#fff'};color:${sortKey==='net'?'#fff':'#334155'};cursor:pointer;">依淨額</button>
+        <button type="button" data-dong-sort="gm" style="padding:4px 8px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;background:${sortKey==='gm'?'#153e72':'#fff'};color:${sortKey==='gm'?'#fff':'#334155'};cursor:pointer;">依毛利率</button>
+        <button type="button" data-dong-sort="qty" style="padding:4px 8px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;background:${sortKey==='qty'?'#153e72':'#fff'};color:${sortKey==='qty'?'#fff':'#334155'};cursor:pointer;">依片數</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>名次</th>
+            <th>客戶名稱</th>
+            <th>分區</th>
+            <th class="hide-mobile">業務人員</th>
+            <th class="num">訂單淨額</th>
+            <th class="num">佔比</th>
+            <th class="num">訂購數量</th>
+            <th class="num">已出貨數量</th>
+            <th class="num hide-mobile">毛利</th>
+            <th class="num">毛利率</th>
+            <th class="hide-mobile">中類分佈</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${clientRows||'<tr><td colspan="11" style="text-align:center;color:#64748b;padding:16px;">查無符合篩選條件的客戶。</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:#64748b;margin-top:8px;">
+      共顯示 <b>${filteredClients.length}</b> 戶客戶。同額採並列排名；淨額為 0 者（如模冠）毛利率依定案規格標示為「不適用」。
+    </div>
+  `;
+ }
+
+ if(activeTab==='shipments'){
+  const unshippedList=cur.unshippedOrders||[];
+
+  if(unshippedList.length===0){
+   tabContentHtml=`
+    <div class="callout" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534;margin-bottom:14px;">
+      <b>出貨狀態：</b>截至查詢截止日（${esc(cutoffDate)}），所選期間內的所有訂單（共 ${cur.totalQty} 片、${money(cur.totalNet)}）均已全數出貨完畢！
+    </div>
+   `;
+  }else{
+   const unshippedRows=unshippedList.map(o=>{
+    const statusTag=o.actualShipDate
+      ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:11px;">晚於截止日出貨 (${esc(o.actualShipDate)})</span>`
+      : (o.isOverdue
+        ? '<span class="badge" style="background:#fef2f2;color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:11px;">逾預計出貨日</span>'
+        : '<span class="badge" style="background:#f8fafc;color:#475569;padding:2px 6px;border-radius:4px;font-size:11px;">正常等待</span>');
+
+    return `
+      <tr>
+        <td><b>${esc(o.orderNo)}</b></td>
+        <td>${esc(o.customer)}</td>
+        <td><span class="badge" style="background:#e0e7ff;color:#4338ca;padding:2px 6px;border-radius:4px;font-size:11px;">${esc(o.region)}</span></td>
+        <td class="hide-mobile">${esc(o.salesPerson)}</td>
+        <td class="hide-mobile">${esc(o.finishDate)}</td>
+        <td class="hide-mobile">${esc(o.expectedDate)}</td>
+        <td class="num" style="font-weight:bold;color:#153e72;">${fmt(o.qty)} 片</td>
+        <td class="num">${money(o.net)}</td>
+        <td>${statusTag}</td>
+      </tr>
+    `;
+   }).join('');
+
+   tabContentHtml=`
+    <div class="callout" style="margin-bottom:12px;">
+      <b>出貨事件日期規格：</b>統計僅採計實際出貨日 &le; 查詢截止日（${esc(cutoffDate)}）者。所選期間累計已出貨 <b>${fmt(cur.shippedQty)} 片</b>（${money(cur.shippedNet)}），目前期末待出貨或晚於截止日出貨計 <b>${unshippedList.length} 單</b>（共 ${fmt(cur.totalQty-cur.shippedQty)} 片）。
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>訂單單號</th>
+            <th>客戶名稱</th>
+            <th>分區</th>
+            <th class="hide-mobile">業務人員</th>
+            <th class="hide-mobile">完工日期</th>
+            <th class="hide-mobile">預計出貨日</th>
+            <th class="num">未出貨數量</th>
+            <th class="num">訂單金額</th>
+            <th>出貨狀態標記</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${unshippedRows}
+        </tbody>
+      </table>
+    </div>
+   `;
+  }
+ }
+
+ return `
+  <div class="dong-drilldown-wrapper" style="margin-top:14px;border:1px solid #cbd5e1;border-radius:8px;padding:16px;background:#ffffff;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h3 style="margin:0;font-size:16px;color:#1e293b;">東澤物料專區｜多維度深入分析 (${esc(scopeName)})</h3>
+      <span style="font-size:12px;color:#64748b;">查詢基準日：<b>${esc(cutoffDate)}</b></span>
+    </div>
+    ${kpiSectionHtml}
+    ${tabBarHtml}
+    ${tabContentHtml}
+    <div class="note" style="margin-top:12px;font-size:11px;color:#64748b;line-height:1.5;">
+      <b>正式追蹤規範：</b>物料訂購單專用；中類∈東澤、東澤特規、東澤特規+；依東澤分析檔 7 區客戶範圍（桃J排除9戶，無汐止排除）。銷售以淨額為主；模冠等零淨額客戶毛利率標示為不適用；同額採並列排名。出貨統計恪遵事件日期規格。
+    </div>
+  </div>
+ `;
+}
+
+function getDongProductDecision(summaryObj){
+ const s=summaryObj.s;
+ const mk=mgmtKey(s.end);
+ const annual=(mode==='ytd');
+ const scope=annual?'YTD':mk+' 管理月';
+ const dpSource=(typeof DONG_PRODUCT_DRILLDOWN!=='undefined'?DONG_PRODUCT_DRILLDOWN:(typeof window!=='undefined'?window.DONG_PRODUCT_DRILLDOWN:null))||{};
+ const dPool=dpSource[annual?'ytd':'month']||{};
+ const curData=dPool[mk]||dPool['2026-08']||{};
+ const net=curData.totalNet!=null?curData.totalNet:0;
+ const margin=curData.totalMargin!=null?curData.totalMargin:0;
+ const gm=curData.totalGm!=null?curData.totalGm:0;
+ const units=curData.units||{};
+ const sheets=units['片']||0;
+ const pcs=units['個']||0;
+ const shippedUnits=curData.shippedUnits||{};
+ const shippedSheets=shippedUnits['片']||0;
+ const shippedPcs=shippedUnits['個']||0;
+ const shippedNet=curData.shippedNet||0;
+ const clients=curData.clients||[];
+ const lowGmClients=clients.filter(c=>c.net>0&&c.gm!=null&&c.gm<15);
+
+ return {
+  id:'dongProduct',
+  title:'東澤指定客戶製品訂購單追蹤',
+  evidence:`${scope}製品追蹤範圍合計淨額 ${money(net)}，毛利 ${money(margin)}（毛利率 ${gm.toFixed(2)}%）；訂購數量共 ${fmt(sheets)} 片＋${fmt(pcs)} 個（單位嚴格分開統計），已出貨 ${fmt(shippedSheets)} 片＋${fmt(shippedPcs)} 個（出貨金額 ${money(shippedNet)}）。`,
+  action:'掌握壓克力加工製品中類與客戶接單結構，落實「片／個」嚴格分流；追蹤各案實際出貨進度與偏低毛利率案件，落實客觀查核。',
+  owner:'製品業務主管＋生產出貨窗口',
+  check:'建議 7 日內完成未出貨訂單進度核對；定期追蹤客戶製品單價與毛利水準，確保交期無虞。',
+  missing:'限定製品訂購單與 6 大中類；沿用東澤指定客戶範圍（桃J排除9戶，無汐止排除）；出貨統計恪遵事件日期規格（實際出貨日 <= 查詢截止日）。數量單位「片」與「個」嚴格分開統計，不予加總。',
+  rows:lowGmClients.slice(0,5).map(c=>[c.name,money(c.net)+' / '+(c.units['片']?fmt(c.units['片'])+' 片':'')+(c.units['個']?(c.units['片']?'、':'')+fmt(c.units['個'])+' 個':''),(c.gm!=null?c.gm.toFixed(2)+'%':'不適用')+`（毛利 ${money(c.margin)}）`]),
+  headers:['查核客戶','訂單淨額 / 數量（片/個）','毛利率 / 毛利額'],
+  drillMonth:mk,
+  cutoffDate:s.end
+ };
+}
+
+function renderDongProductHtml(mode, drillMonth, cutoffDate, filterRegion='全部', activeTab='overview', sortKey='net', searchKey=''){
+ const annual=(mode==='ytd');
+ const scopeName=annual?'2026 YTD':`${drillMonth} 管理月`;
+ const dpSource=(typeof DONG_PRODUCT_DRILLDOWN!=='undefined'?DONG_PRODUCT_DRILLDOWN:(typeof window!=='undefined'?window.DONG_PRODUCT_DRILLDOWN:null))||{};
+ const dPool=dpSource[annual?'ytd':'month']||{};
+ const cur=dPool[drillMonth]||dPool['2026-08']||null;
+
+ if(!cur){
+  return `<div class="warn">目前期間（${scopeName}）尚無東澤製品詳細分析資料。</div>`;
+ }
+
+ const sheets=cur.units['片']||0;
+ const pcs=cur.units['個']||0;
+ const shippedSheets=cur.shippedUnits['片']||0;
+ const shippedPcs=cur.shippedUnits['個']||0;
+ const shippedNet=cur.shippedNet||0;
+
+ const kpiSectionHtml=`
+  <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:16px;">
+    <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">製品訂購數量（片/個嚴格分開）</div>
+      <div style="font-size:20px;font-weight:bold;color:#153e72;margin:4px 0;">${fmt(sheets)} <span style="font-size:13px;">片</span> ＋ ${fmt(pcs)} <span style="font-size:13px;">個</span></div>
+      <div style="font-size:11px;color:#64748b;">明細 ${fmt(cur.lineCount)} 筆｜訂單 ${fmt(cur.orderCount)} 單</div>
+    </div>
+    <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">製品追蹤範圍淨額</div>
+      <div style="font-size:20px;font-weight:bold;color:#153e72;margin:4px 0;">${money(cur.totalNet)}</div>
+      <div style="font-size:11px;color:#64748b;">交易客戶 ${cur.customerCount} 戶｜總額 ${money(cur.totalGross)}</div>
+    </div>
+    <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">毛利額與毛利率</div>
+      <div style="font-size:20px;font-weight:bold;color:#16805a;margin:4px 0;">${money(cur.totalMargin)}</div>
+      <div style="font-size:11px;color:#64748b;">毛利率 <b style="color:#d97706;">${cur.totalGm!=null?cur.totalGm.toFixed(2)+'%':'-'}</b>｜成本 ${money(cur.totalCost)}</div>
+    </div>
+    <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">出貨進度（至 ${esc(cutoffDate)}）</div>
+      <div style="font-size:20px;font-weight:bold;color:#0284c7;margin:4px 0;">已出 ${fmt(shippedSheets)} 片 ＋ ${fmt(shippedPcs)} 個</div>
+      <div style="font-size:11px;color:#64748b;">出貨金額 ${money(shippedNet)}｜待出貨 ${cur.unshippedOrders.length} 單</div>
+    </div>
+  </div>
+ `;
+
+ const tabs=[
+  {key:'overview',label:'總覽與品類結構'},
+  {key:'units',label:'片／個單位結構（嚴格分開）'},
+  {key:'clients',label:`客戶排行名單 (${cur.clients.length} 戶)`},
+  {key:'shipments',label:`出貨追蹤 (${cur.unshippedOrders.length} 單待出貨)`}
+ ];
+
+ const tabBtnsHtml=tabs.map(t=>{
+  const isActive=(activeTab===t.key);
+  return `<button type="button" class="dong-prod-tab-btn" data-dong-prod-tab="${t.key}" style="padding:8px 16px;font-size:13px;font-weight:bold;border-radius:6px;border:1px solid ${isActive?'#2563eb':'#cbd5e1'};background:${isActive?'#2563eb':'#fff'};color:${isActive?'#fff':'#334155'};cursor:pointer;">${t.label}</button>`;
+ }).join('');
+
+ const tabBarHtml=`
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;border-bottom:2px solid #e2e8f0;padding-bottom:10px;">
+    ${tabBtnsHtml}
+  </div>
+ `;
+
+ let tabContentHtml='';
+
+ if(activeTab==='overview'){
+  const catRows=cur.categories.map(c=>{
+   const unitStr=(c.units['片']?fmt(c.units['片'])+' 片':'')+(c.units['個']?(c.units['片']?'<br>':'')+fmt(c.units['個'])+' 個':'');
+   const shippedUnitStr=(c.shippedUnits['片']?fmt(c.shippedUnits['片'])+' 片':'')+(c.shippedUnits['個']?(c.shippedUnits['片']?'<br>':'')+fmt(c.shippedUnits['個'])+' 個':'');
+   return `
+    <tr>
+      <td><b>${esc(c.category)}</b></td>
+      <td class="num">${money(c.net)}</td>
+      <td class="num">${c.share.toFixed(2)}%</td>
+      <td class="num">${unitStr||'-'}</td>
+      <td class="num">${shippedUnitStr||'-'}</td>
+      <td class="num">${money(c.shippedNet)}</td>
+      <td class="num hide-mobile">${money(c.margin)}</td>
+      <td class="num"><b style="color:${c.gm<15?'#dc2626':'#16805a'};">${c.gm!=null?c.gm.toFixed(2)+'%':'-'}</b></td>
+      <td class="num hide-mobile">${c.orderCount}</td>
+      <td class="num hide-mobile">${c.customerCount}</td>
+    </tr>
+   `;
+  }).join('');
+
+  const regCardsHtml=cur.regions.map(r=>{
+   const regUnitStr=(r.units['片']?fmt(r.units['片'])+'片':'')+(r.units['個']?(r.units['片']?' / ':'')+fmt(r.units['個'])+'個':'');
+   return `
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:10px 12px;border-radius:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:bold;color:#1e293b;font-size:13px;">${esc(r.region)}</span>
+        <span style="font-size:11px;color:#64748b;">佔比 ${r.share.toFixed(1)}%</span>
+      </div>
+      <div style="font-size:16px;font-weight:bold;color:#153e72;margin:4px 0;">${money(r.net)}</div>
+      <div style="font-size:11px;color:#475569;margin-bottom:4px;">毛利率 <b>${r.gm!=null?r.gm.toFixed(2)+'%':'-'}</b>（毛利 ${money(r.margin)}）</div>
+      <div style="font-size:11px;color:#64748b;">數量: ${regUnitStr||'-'}｜${r.customerCount} 戶 (${r.orderCount} 單)</div>
+      <div style="margin-top:6px;text-align:right;">
+        <button type="button" data-dong-prod-reg="${esc(r.region)}" style="font-size:11px;padding:2px 8px;border:1px solid #cbd5e1;background:#fff;color:#2563eb;border-radius:4px;cursor:pointer;">查看該區客戶 &rarr;</button>
+      </div>
+    </div>
+   `;
+  }).join('');
+
+  tabContentHtml=`
+    <div class="callout" style="margin-bottom:14px;background:#f0f9ff;border-color:#bae6fd;color:#0369a1;">
+      <b>製品中類結構重點：</b>「製品」中類涵蓋全部 1,118 個，其餘「東澤」、「東澤特規」等中類則為「片」計量。各品類加工複雜度與用料結構差異大，獨立統計以呈現客觀效益。
+    </div>
+    <div class="table-scroll" style="margin-bottom:16px;">
+      <table>
+        <thead>
+          <tr>
+            <th>製品中類</th>
+            <th class="num">訂單淨額</th>
+            <th class="num">佔比</th>
+            <th class="num">訂購數量</th>
+            <th class="num">已出貨數量</th>
+            <th class="num">出貨金額</th>
+            <th class="num hide-mobile">毛利</th>
+            <th class="num">毛利率</th>
+            <th class="num hide-mobile">訂單數</th>
+            <th class="num hide-mobile">客戶數</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${catRows}
+        </tbody>
+      </table>
+    </div>
+    <h4 style="margin:12px 0 8px;font-size:13px;color:#334155;">7 區業務區域分佈概覽</h4>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;">
+      ${regCardsHtml}
+    </div>
+  `;
+ }
+
+ if(activeTab==='units'){
+  const uSheet=cur.unitsBreakdown['片']||{};
+  const uPc=cur.unitsBreakdown['個']||{};
+
+  tabContentHtml=`
+    <div class="callout" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;margin-bottom:16px;">
+      <b>核心計量規格說明：</b>「片」（Sheet）與「個」（Piece）為異質物理計量單位，製程工時、定價基礎與出貨包裝完全不同。系統恪遵管理定案規格<b>嚴格獨立統計，絕不加總</b>，避免產生無實質意義的混合數字。
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:18px;">
+      <div style="border:1px solid #bfdbfe;border-top:4px solid #2563eb;background:#f8fafc;padding:14px;border-radius:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h4 style="margin:0;font-size:15px;color:#1e3a8a;">「片 (Sheet)」製品統計</h4>
+          <span style="font-size:11px;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-weight:bold;">板材加工類</span>
+        </div>
+        <div style="font-size:24px;font-weight:bold;color:#153e72;margin:10px 0 6px;">${fmt(uSheet.orderedQty)} <span style="font-size:14px;">片</span></div>
+        <div style="font-size:12px;color:#475569;margin-bottom:4px;">訂單淨額：<b>${money(uSheet.net)}</b>（佔比 <b>${uSheet.share!=null?uSheet.share.toFixed(2)+'%':'-'}</b>）</div>
+        <div style="font-size:12px;color:#475569;margin-bottom:4px;">毛利額：<b>${money(uSheet.margin)}</b>（毛利率 <b style="color:#16805a;">${uSheet.gm!=null?uSheet.gm.toFixed(2)+'%':'-'}</b>）</div>
+        <div style="font-size:12px;color:#0284c7;margin-bottom:4px;">出貨進度：已出貨 <b>${fmt(uSheet.shippedQty)} 片</b>（達成率 <b>${uSheet.shippedRate!=null?uSheet.shippedRate.toFixed(1)+'%':'-'}</b>）</div>
+        <div style="font-size:12px;color:#475569;margin-bottom:4px;">出貨金額：<b>${money(uSheet.shippedNet)}</b></div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">平均單價：約 <b>$${uSheet.avgPrice!=null?fmt(uSheet.avgPrice):'-'} / 片</b></div>
+        <div style="font-size:11px;color:#64748b;margin-top:8px;border-top:1px dashed #cbd5e1;padding-top:6px;">
+          涵蓋訂單 <b>${uSheet.orders||0}</b> 單、明細 <b>${uSheet.lines||0}</b> 筆、客戶 <b>${uSheet.customers||0}</b> 戶。<br>分佈於東澤、製品、東澤特規、壓克力特規等中類。
+        </div>
+      </div>
+
+      <div style="border:1px solid #fed7aa;border-top:4px solid #ea580c;background:#f8fafc;padding:14px;border-radius:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h4 style="margin:0;font-size:15px;color:#9a3412;">「個 (Piece)」製品統計</h4>
+          <span style="font-size:11px;background:#ffedd5;color:#9a3412;padding:2px 8px;border-radius:10px;font-weight:bold;">立體件／組配件</span>
+        </div>
+        <div style="font-size:24px;font-weight:bold;color:#ea580c;margin:10px 0 6px;">${fmt(uPc.orderedQty)} <span style="font-size:14px;">個</span></div>
+        <div style="font-size:12px;color:#475569;margin-bottom:4px;">訂單淨額：<b>${money(uPc.net)}</b>（佔比 <b>${uPc.share!=null?uPc.share.toFixed(2)+'%':'-'}</b>）</div>
+        <div style="font-size:12px;color:#475569;margin-bottom:4px;">毛利額：<b>${money(uPc.margin)}</b>（毛利率 <b style="color:#16805a;">${uPc.gm!=null?uPc.gm.toFixed(2)+'%':'-'}</b>）</div>
+        <div style="font-size:12px;color:#0284c7;margin-bottom:4px;">出貨進度：已出貨 <b>${fmt(uPc.shippedQty)} 個</b>（達成率 <b>${uPc.shippedRate!=null?uPc.shippedRate.toFixed(1)+'%':'-'}</b>）</div>
+        <div style="font-size:12px;color:#475569;margin-bottom:4px;">出貨金額：<b>${money(uPc.shippedNet)}</b></div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">平均單價：約 <b>$${uPc.avgPrice!=null?fmt(uPc.avgPrice):'-'} / 個</b></div>
+        <div style="font-size:11px;color:#64748b;margin-top:8px;border-top:1px dashed #cbd5e1;padding-top:6px;">
+          涵蓋訂單 <b>${uPc.orders||0}</b> 單、明細 <b>${uPc.lines||0}</b> 筆、客戶 <b>${uPc.customers||0}</b> 戶。<br>100% 全數集中於「製品」中類。
+        </div>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>銷售單位</th>
+            <th class="num">訂購數量</th>
+            <th class="num">訂單淨額</th>
+            <th class="num">淨額佔比</th>
+            <th class="num">毛利額</th>
+            <th class="num">毛利率</th>
+            <th class="num">已出貨數量</th>
+            <th class="num">出貨達成率</th>
+            <th class="num">出貨金額</th>
+            <th class="num hide-mobile">訂單數</th>
+            <th class="num hide-mobile">客戶數</th>
+            <th class="num">平均單價</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>片 (Sheet)</b></td>
+            <td class="num" style="font-weight:bold;color:#153e72;">${fmt(uSheet.orderedQty)} 片</td>
+            <td class="num">${money(uSheet.net)}</td>
+            <td class="num">${uSheet.share!=null?uSheet.share.toFixed(2)+'%':'-'}</td>
+            <td class="num">${money(uSheet.margin)}</td>
+            <td class="num">${uSheet.gm!=null?uSheet.gm.toFixed(2)+'%':'-'}</td>
+            <td class="num">${fmt(uSheet.shippedQty)} 片</td>
+            <td class="num">${uSheet.shippedRate!=null?uSheet.shippedRate.toFixed(1)+'%':'-'}</td>
+            <td class="num">${money(uSheet.shippedNet)}</td>
+            <td class="num hide-mobile">${uSheet.orders}</td>
+            <td class="num hide-mobile">${uSheet.customers}</td>
+            <td class="num">約 $${uSheet.avgPrice!=null?fmt(uSheet.avgPrice):'-'}</td>
+          </tr>
+          <tr>
+            <td><b>個 (Piece)</b></td>
+            <td class="num" style="font-weight:bold;color:#ea580c;">${fmt(uPc.orderedQty)} 個</td>
+            <td class="num">${money(uPc.net)}</td>
+            <td class="num">${uPc.share!=null?uPc.share.toFixed(2)+'%':'-'}</td>
+            <td class="num">${money(uPc.margin)}</td>
+            <td class="num">${uPc.gm!=null?uPc.gm.toFixed(2)+'%':'-'}</td>
+            <td class="num">${fmt(uPc.shippedQty)} 個</td>
+            <td class="num">${uPc.shippedRate!=null?uPc.shippedRate.toFixed(1)+'%':'-'}</td>
+            <td class="num">${money(uPc.shippedNet)}</td>
+            <td class="num hide-mobile">${uPc.orders}</td>
+            <td class="num hide-mobile">${uPc.customers}</td>
+            <td class="num">約 $${uPc.avgPrice!=null?fmt(uPc.avgPrice):'-'}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+ }
+
+ if(activeTab==='clients'){
+  const allRegions=['全部','A區','C區','D區','G區','J區','中I','省區'];
+  const regOptions=allRegions.map(r=>`<option value="${r}" ${filterRegion===r?'selected':''}>${r}</option>`).join('');
+
+  let filteredClients=cur.clients.slice();
+  if(filterRegion&&filterRegion!=='全部'){
+   filteredClients=filteredClients.filter(c=>c.region===filterRegion);
+  }
+  if(searchKey){
+   filteredClients=filteredClients.filter(c=>c.name.toLowerCase().includes(searchKey));
+  }
+
+  if(sortKey==='gm'){
+   filteredClients.sort((a,b)=>{
+    if(a.gm==null&&b.gm==null)return 0;
+    if(a.gm==null)return 1;
+    if(b.gm==null)return -1;
+    return b.gm-a.gm||b.net-a.net;
+   });
+  }else if(sortKey==='qty_sheet'){
+   filteredClients.sort((a,b)=>(b.units['片']||0)-(a.units['片']||0)||b.net-a.net);
+  }else if(sortKey==='qty_pc'){
+   filteredClients.sort((a,b)=>(b.units['個']||0)-(a.units['個']||0)||b.net-a.net);
+  }else{
+   filteredClients.sort((a,b)=>b.net-a.net||a.name.localeCompare(b.name,'zh-Hant'));
+  }
+
+  const clientRows=filteredClients.map(c=>{
+   const catLabels=Object.entries(c.categories).map(([cat,amt])=>`${cat}: ${money(amt)}`).join('、');
+   const sheetStr=c.units['片']?fmt(c.units['片'])+' 片':'-';
+   const pcStr=c.units['個']?fmt(c.units['個'])+' 個':'-';
+   const shipStatus=(c.shippedUnits['片']!=null?fmt(c.shippedUnits['片'])+'片':'')+(c.shippedUnits['個']!=null?(c.shippedUnits['片']!=null?' / ':'')+fmt(c.shippedUnits['個'])+'個':'');
+   return `
+    <tr>
+      <td style="font-weight:bold;color:#64748b;">${c.rank}</td>
+      <td><b>${esc(c.name)}</b></td>
+      <td><span class="badge" style="background:#e0e7ff;color:#4338ca;padding:2px 6px;border-radius:4px;font-size:11px;">${esc(c.region)}</span></td>
+      <td class="hide-mobile">${esc(c.salesPerson)}</td>
+      <td class="num" style="font-weight:bold;color:#153e72;">${money(c.net)}</td>
+      <td class="num">${c.share.toFixed(2)}%</td>
+      <td class="num">${sheetStr}</td>
+      <td class="num">${pcStr}</td>
+      <td class="num">${shipStatus||'-'}</td>
+      <td class="num hide-mobile">${money(c.margin)}</td>
+      <td class="num"><b style="color:${c.gm!=null?(c.gm<15?'#dc2626':'#16805a'):'#64748b'};">${c.gm!=null?c.gm.toFixed(2)+'%':'不適用'}</b></td>
+      <td class="hide-mobile" style="font-size:11px;color:#64748b;" title="${esc(catLabels)}">${esc(catLabels.length>22?catLabels.slice(0,22)+'...':catLabels)}</td>
+    </tr>
+   `;
+  }).join('');
+
+  tabContentHtml=`
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px;background:#f8fafc;padding:10px 12px;border-radius:6px;border:1px solid #e2e8f0;">
+      <label style="font-size:12px;font-weight:bold;color:#334155;">分區篩選：
+        <select id="dongProdRegionSelect" style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:12px;">
+          ${regOptions}
+        </select>
+      </label>
+      <label style="font-size:12px;font-weight:bold;color:#334155;">搜尋客戶：
+        <input type="text" id="dongProdClientSearch" placeholder="輸入關鍵字..." value="${esc(searchKey)}" style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:12px;width:140px;">
+      </label>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#64748b;">排序方式：</span>
+        <button type="button" data-dong-prod-sort="net" style="padding:4px 8px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;background:${sortKey==='net'?'#2563eb':'#fff'};color:${sortKey==='net'?'#fff':'#334155'};cursor:pointer;">依淨額</button>
+        <button type="button" data-dong-prod-sort="gm" style="padding:4px 8px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;background:${sortKey==='gm'?'#2563eb':'#fff'};color:${sortKey==='gm'?'#fff':'#334155'};cursor:pointer;">依毛利率</button>
+        <button type="button" data-dong-prod-sort="qty_sheet" style="padding:4px 8px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;background:${sortKey==='qty_sheet'?'#2563eb':'#fff'};color:${sortKey==='qty_sheet'?'#fff':'#334155'};cursor:pointer;">依片數</button>
+        <button type="button" data-dong-prod-sort="qty_pc" style="padding:4px 8px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;background:${sortKey==='qty_pc'?'#2563eb':'#fff'};color:${sortKey==='qty_pc'?'#fff':'#334155'};cursor:pointer;">依個數</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>名次</th>
+            <th>客戶名稱</th>
+            <th>分區</th>
+            <th class="hide-mobile">業務人員</th>
+            <th class="num">訂單淨額</th>
+            <th class="num">佔比</th>
+            <th class="num">訂購片數</th>
+            <th class="num">訂購個數</th>
+            <th class="num">已出貨進度</th>
+            <th class="num hide-mobile">毛利</th>
+            <th class="num">毛利率</th>
+            <th class="hide-mobile">中類分佈</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${clientRows||'<tr><td colspan="12" style="text-align:center;color:#64748b;padding:16px;">查無符合篩選條件的客戶。</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:#64748b;margin-top:8px;">
+      共顯示 <b>${filteredClients.length}</b> 戶客戶。同額採並列排名；片與個分流顯示；零淨額客戶毛利率標示為「不適用」。
+    </div>
+  `;
+ }
+
+ if(activeTab==='shipments'){
+  const unshippedList=cur.unshippedOrders||[];
+
+  if(unshippedList.length===0){
+   tabContentHtml=`
+    <div class="callout" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534;margin-bottom:14px;">
+      <b>出貨狀態：</b>截至查詢截止日（${esc(cutoffDate)}），所選期間內的所有製品訂單（共 ${fmt(sheets)} 片＋${fmt(pcs)} 個、${money(cur.totalNet)}）均已全數出貨完畢！
+    </div>
+   `;
+  }else{
+   const unshippedRows=unshippedList.map(o=>{
+    const statusTag=o.actualDate!=='-'
+      ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:11px;">晚於截止日出貨 (${esc(o.actualDate)})</span>`
+      : (o.completeDate!=='-'
+        ? '<span class="badge" style="background:#fef3c7;color:#b45309;padding:2px 6px;border-radius:4px;font-size:11px;">已完工待出貨</span>'
+        : '<span class="badge" style="background:#f8fafc;color:#475569;padding:2px 6px;border-radius:4px;font-size:11px;">製程中未完工</span>');
+
+    const unUnitStr=Object.entries(o.unshippedUnits).map(([u,q])=>`${fmt(q)} ${u}`).join('、')||'0';
+
+    return `
+      <tr>
+        <td><b>${esc(o.orderId)}</b></td>
+        <td>${esc(o.customer)}</td>
+        <td><span class="badge" style="background:#e0e7ff;color:#4338ca;padding:2px 6px;border-radius:4px;font-size:11px;">${esc(o.region)}</span></td>
+        <td class="hide-mobile">${esc(o.salesPerson)}</td>
+        <td class="hide-mobile">${esc(o.completeDate)}</td>
+        <td class="hide-mobile">${esc(o.expectedDate)}</td>
+        <td class="num" style="font-weight:bold;color:#2563eb;">${unUnitStr}</td>
+        <td class="num">${money(o.net)}</td>
+        <td>${statusTag}</td>
+      </tr>
+    `;
+   }).join('');
+
+   tabContentHtml=`
+    <div class="callout" style="margin-bottom:12px;">
+      <b>出貨事件日期規格：</b>統計僅採計實際出貨日 &le; 查詢截止日（${esc(cutoffDate)}）者。所選期間累計已出貨 <b>${fmt(shippedSheets)} 片</b>＋<b>${fmt(shippedPcs)} 個</b>（${money(shippedNet)}），目前期末待出貨或晚於截止日出貨計 <b>${unshippedList.length} 單</b>。
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>訂單單號</th>
+            <th>客戶名稱</th>
+            <th>分區</th>
+            <th class="hide-mobile">業務人員</th>
+            <th class="hide-mobile">完工日期</th>
+            <th class="hide-mobile">預計出貨日</th>
+            <th class="num">未出貨數量</th>
+            <th class="num">訂單金額</th>
+            <th>出貨狀態標記</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${unshippedRows}
+        </tbody>
+      </table>
+    </div>
+   `;
+  }
+ }
+
+ return `
+  <div class="dong-product-drilldown-wrapper" style="margin-top:14px;border:1px solid #cbd5e1;border-radius:8px;padding:16px;background:#ffffff;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h3 style="margin:0;font-size:16px;color:#1e293b;">東澤指定客戶製品訂購單追蹤｜多維度深入分析 (${esc(scopeName)})</h3>
+      <span style="font-size:12px;color:#64748b;">查詢基準日：<b>${esc(cutoffDate)}</b></span>
+    </div>
+    ${kpiSectionHtml}
+    ${tabBarHtml}
+    ${tabContentHtml}
+    <div class="note" style="margin-top:12px;font-size:11px;color:#64748b;line-height:1.5;">
+      <b>正式追蹤規範：</b>製品訂購單專用；中類限定 6 類；沿用東澤指定客戶範圍（桃J排除9戶，無汐止排除）。數量單位「片」與「個」嚴格分開統計，絕不加總；銷售以淨額為主；模冠等零淨額客戶毛利率標示為不適用；同額採並列排名。出貨統計恪遵事件日期規格。
+    </div>
+  </div>
+ `;
+}
 
  const priorOpen=openImprove;openImprove=function(id){
+ const isDong=(id==='dong');
+ const isDongProduct=(id==='dongProduct');
  const isLifeId=(id==='customer-life'||id==='new-customer'||id==='dormant-customer');
  let activeLifeTab=(id==='dormant-customer')?'dormant':'new';
- const initialOpenKey=isLifeId?((activeLifeTab==='dormant')?'dormant-customer':'new-customer'):id;
+ const initialOpenKey=isDong?'dong':isDongProduct?'dongProduct':isLifeId?((activeLifeTab==='dormant')?'dormant-customer':'new-customer'):id;
  priorOpen(initialOpenKey);
 
  document.getElementById('decisionDetail')?.remove();
- const d=decisions().find(d=>d.id===(isLifeId?'customer-life':id));
+ const summaryObj=getSummary(picker.value);
+ let d=null;
+ if(isDong){
+  d=getDongDecision(summaryObj);
+ }else if(isDongProduct){
+  d=getDongProductDecision(summaryObj);
+ }else{
+  d=decisions().find(d=>d.id===(isLifeId?'customer-life':id));
+ }
  if(!d)return;
 
- const summaryObj=getSummary(picker.value);
  const storageKey='chiao-action-v1:'+mode+':'+summaryObj.key+':'+id;
  let saved={};try{saved=JSON.parse(localStorage.getItem(storageKey)||'{}')}catch{}
  const ths=(d.headers||['處理對象','數據依據','差距／查核資訊']).map(h=>`<th>${esc(h)}</th>`).join('');
@@ -1698,6 +2585,8 @@ function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, e
  const custDrillHtml=(d.id==='customer')?`<div id="customerDrilldownContainer">${renderCustomerDrilldownHtml(mode,drillMonth,null,cutoffDate)}</div>`:'';
  const shipDrillHtml=(d.id==='shipment')?`<div id="shipmentDrilldownContainer">${renderUnshippedDrilldownHtml(mode,drillMonth,cutoffDate,'全部','wait',null)}</div>`:'';
  const prodDrillHtml=(d.id==='product')?`<div id="productDrilldownContainer">${renderProductDrilldownHtml(mode,drillMonth,cutoffDate,'net',null,null)}</div>`:'';
+ const dongDrillHtml=(d.id==='dong')?`<div id="dongDrilldownContainer">${renderDongDrilldownHtml(mode,drillMonth,cutoffDate,'全部','regions')}</div>`:'';
+ const dongProdDrillHtml=(d.id==='dongProduct')?`<div id="dongProductContainer">${renderDongProductHtml(mode,drillMonth,cutoffDate,'全部','overview')}</div>`:'';
 
  let lifeSectionHtml='';
  if(isLifeId){
@@ -1712,13 +2601,13 @@ function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, e
  }
 
  const checkLabel=(d.id==='equipment'||d.id==='signoff'||d.id==='target')?'後續追蹤':'驗收條件';
- const isCustomDrill=(isLifeId||d.id==='shipment'||d.id==='product');
+ const isCustomDrill=(isLifeId||d.id==='shipment'||d.id==='product'||d.id==='dong'||d.id==='dongProduct');
  const previewTableHtml=(!isCustomDrill&&d.rows&&d.rows.length)?'<div class="table-scroll"><table><thead><tr>'+ths+'</tr></thead><tbody>'+d.rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+extraNoteHtml:'';
 
  const detail=document.createElement('section');
  detail.id='decisionDetail';
  detail.className='decision-detail';
- detail.innerHTML=`<span class="tag blue">本期數據與建議處置</span><h2>${esc(d.title)}</h2><p>${esc(d.evidence)}</p>${previewTableHtml}${targetDrillHtml}${custDrillHtml}${lifeSectionHtml}${shipDrillHtml}${prodDrillHtml}<p><b>建議行動：</b>${esc(d.action)}</p><p><b>建議負責：</b>${esc(d.owner)}</p><p><b>${checkLabel}：</b>${esc(d.check)}</p><div class="warn"><b>資料限制：</b>${esc(d.missing)}</div><h3>本機改善追蹤</h3><p class="note">以目前期間與指標保存於此瀏覽器，未指派給其他人；無跨裝置同步。標為待驗收不代表改善成效已確認。</p><label>實際負責人 <input id="actionOwner" placeholder="待主管指派" value="${esc(saved.owner||'')}"></label><label>核定期限 <input id="actionDue" type="date" value="${esc(saved.due||'')}"></label><label>執行狀態 <select id="actionStatus"><option>待確認</option><option>執行中</option><option>待驗收</option></select></label><label>原因、措施及驗收證據<textarea id="actionMemo">${esc(saved.memo||'')}</textarea></label><button id="saveAction" class="improve-btn">儲存本機追蹤</button><p id="saveFeedback" role="status"></p>`;
+ detail.innerHTML=`<span class="tag blue">本期數據與建議處置</span><h2>${esc(d.title)}</h2><p>${esc(d.evidence)}</p>${previewTableHtml}${targetDrillHtml}${custDrillHtml}${lifeSectionHtml}${shipDrillHtml}${prodDrillHtml}${dongDrillHtml}${dongProdDrillHtml}<p><b>建議行動：</b>${esc(d.action)}</p><p><b>建議負責：</b>${esc(d.owner)}</p><p><b>${checkLabel}：</b>${esc(d.check)}</p><div class="warn"><b>資料限制：</b>${esc(d.missing)}</div><h3>本機改善追蹤</h3><p class="note">以目前期間與指標保存於此瀏覽器，未指派給其他人；無跨裝置同步。標為待驗收不代表改善成效已確認。</p><label>實際負責人 <input id="actionOwner" placeholder="待主管指派" value="${esc(saved.owner||'')}"></label><label>核定期限 <input id="actionDue" type="date" value="${esc(saved.due||'')}"></label><label>執行狀態 <select id="actionStatus"><option>待確認</option><option>執行中</option><option>待驗收</option></select></label><label>原因、措施及驗收證據<textarea id="actionMemo">${esc(saved.memo||'')}</textarea></label><button id="saveAction" class="improve-btn">儲存本機追蹤</button><p id="saveFeedback" role="status"></p>`;
  document.querySelector('.improve-body').prepend(detail);
 
  if(d.id==='target'){
@@ -1861,6 +2750,100 @@ function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, e
      const dcBox=(detail.querySelector?detail.querySelector('#dormantCustomerDrilldownContainer'):null)||document.getElementById('dormantCustomerDrilldownContainer');
      if(dcBox)dcBox.innerHTML=renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentDormFilter,currentDormSort);
      return;
+    }
+   });
+  }
+ }
+ if(d.id==='dong'){
+  let currentDongRegion='全部';
+  let currentDongTab='regions';
+  let currentDongSort='net';
+  let currentDongSearch='';
+  const updateDongDisplay=()=>{
+   const dzBox=(detail.querySelector?detail.querySelector('#dongDrilldownContainer'):null)||document.getElementById('dongDrilldownContainer');
+   if(dzBox)dzBox.innerHTML=renderDongDrilldownHtml(mode,drillMonth,cutoffDate,currentDongRegion,currentDongTab,currentDongSort,currentDongSearch);
+  };
+  if(detail.addEventListener){
+   detail.addEventListener('click',e=>{
+    const tabBtn=e.target&&e.target.closest?e.target.closest('[data-dong-tab]'):null;
+    if(tabBtn&&tabBtn.dataset&&tabBtn.dataset.dongTab){
+     currentDongTab=tabBtn.dataset.dongTab;
+     updateDongDisplay();
+     return;
+    }
+    const regBtn=e.target&&e.target.closest?e.target.closest('[data-dong-reg]'):null;
+    if(regBtn&&regBtn.dataset&&regBtn.dataset.dongReg){
+     currentDongRegion=regBtn.dataset.dongReg;
+     currentDongTab='clients';
+     updateDongDisplay();
+     return;
+    }
+    const sortBtn=e.target&&e.target.closest?e.target.closest('[data-dong-sort]'):null;
+    if(sortBtn&&sortBtn.dataset&&sortBtn.dataset.dongSort){
+     currentDongSort=sortBtn.dataset.dongSort;
+     updateDongDisplay();
+     return;
+    }
+   });
+   detail.addEventListener('input',e=>{
+    if(e.target&&e.target.id==='dongClientSearch'){
+     currentDongSearch=e.target.value.trim().toLowerCase();
+     updateDongDisplay();
+     const sIn=document.getElementById('dongClientSearch');
+     if(sIn){sIn.focus();sIn.value=currentDongSearch;}
+    }
+   });
+   detail.addEventListener('change',e=>{
+    if(e.target&&e.target.id==='dongRegionSelect'){
+     currentDongRegion=e.target.value;
+     updateDongDisplay();
+    }
+   });
+  }
+ }
+ if(d.id==='dongProduct'){
+  let currentDongProdRegion='全部';
+  let currentDongProdTab='overview';
+  let currentDongProdSort='net';
+  let currentDongProdSearch='';
+  const updateDongProdDisplay=()=>{
+   const dpBox=(detail.querySelector?detail.querySelector('#dongProductContainer'):null)||document.getElementById('dongProductContainer');
+   if(dpBox)dpBox.innerHTML=renderDongProductHtml(mode,drillMonth,cutoffDate,currentDongProdRegion,currentDongProdTab,currentDongProdSort,currentDongProdSearch);
+  };
+  if(detail.addEventListener){
+   detail.addEventListener('click',e=>{
+    const tabBtn=e.target&&e.target.closest?e.target.closest('[data-dong-prod-tab]'):null;
+    if(tabBtn&&tabBtn.dataset&&tabBtn.dataset.dongProdTab){
+     currentDongProdTab=tabBtn.dataset.dongProdTab;
+     updateDongProdDisplay();
+     return;
+    }
+    const regBtn=e.target&&e.target.closest?e.target.closest('[data-dong-prod-reg]'):null;
+    if(regBtn&&regBtn.dataset&&regBtn.dataset.dongProdReg){
+     currentDongProdRegion=regBtn.dataset.dongProdReg;
+     currentDongProdTab='clients';
+     updateDongProdDisplay();
+     return;
+    }
+    const sortBtn=e.target&&e.target.closest?e.target.closest('[data-dong-prod-sort]'):null;
+    if(sortBtn&&sortBtn.dataset&&sortBtn.dataset.dongProdSort){
+     currentDongProdSort=sortBtn.dataset.dongProdSort;
+     updateDongProdDisplay();
+     return;
+    }
+   });
+   detail.addEventListener('input',e=>{
+    if(e.target&&e.target.id==='dongProdClientSearch'){
+     currentDongProdSearch=e.target.value.trim().toLowerCase();
+     updateDongProdDisplay();
+     const sIn=document.getElementById('dongProdClientSearch');
+     if(sIn){sIn.focus();sIn.value=currentDongProdSearch;}
+    }
+   });
+   detail.addEventListener('change',e=>{
+    if(e.target&&e.target.id==='dongProdRegionSelect'){
+     currentDongProdRegion=e.target.value;
+     updateDongProdDisplay();
     }
    });
   }

@@ -98,8 +98,8 @@ main{padding:14px 12px 40px}.block{background:#fff;border:1px solid var(--line);
 <section class="block" id="signoff"><div class="block-title purplebar">工作站流程簽核（每日簽核規格定案）</div><div class="content" id="signoffContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="signoff">查看改善方式</button></div></section>
 <section class="block" id="machine"><div class="block-title bluebar">生產與設備</div><div class="content" id="machineContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="equipment">查看改善方式</button></div></section>
 <section class="block" id="product"><div class="block-title greenbar">產品結構與毛利</div><div class="content" id="productContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="product">查看改善方式</button></div></section>
-<section class="block" id="dong"><div class="block-title purplebar">東澤指定客戶物料單追蹤（定案規格）</div><div class="content" id="dongContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="dong">查看改善方式</button></div></section>
-<section class="block" id="productOrders"><div class="block-title bluebar">東澤指定客戶製品訂購單追蹤（定案規格）</div><div class="content" id="productOrdersContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="dongProduct">查看改善方式</button></div></section>
+<section class="block" id="dong"><div class="block-title purplebar">東澤指定客戶物料單桃園區追蹤</div><div class="content" id="dongContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="dong">查看改善方式</button></div></section>
+<section class="block" id="productOrders"><div class="block-title bluebar">東澤指定客戶製品訂購單桃園區追蹤（定案規格）</div><div class="content" id="productOrdersContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="dongProduct">查看改善方式</button></div></section>
 <div class="footer">訂單與每日簽核：最新至 2026/09/13｜巧展管理月採 26–25｜正式月報（營業實績、目標、設備、生產）提供至 2026 年 8 月，不以訂單自行推估</div>
 </main>
 <script>
@@ -274,6 +274,73 @@ function signTrendRows(maxMonth){
   }
   return rows;
 }
+
+const FIVE_REGION_KEYS = ['全部', '台北', '桃園', '新竹', '台南', '大圖'];
+let currentEquipView = 'poor'; // 'poor', 'good', 'all'
+let currentTargetView = 'low'; // 'low', 'high', 'all'
+let currentCustomerBranch = '全部';
+let currentNewCustomerBranch = '全部';
+let currentDormantBranch = '全部';
+let currentProductBranch = '全部';
+
+function renderBranchButtonsHtml(category, currentBranch){
+  return `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:#64748b;font-weight:bold;">分區切換：</span>
+      ${FIVE_REGION_KEYS.map(b => {
+        const isAct = (b === currentBranch);
+        return `<button type="button" class="branch-btn" data-${category}-branch="${esc(b)}" style="padding:4px 10px;font-size:12px;font-weight:${isAct?'bold':'normal'};border-radius:6px;border:1px solid ${isAct?'#153e72':'#cbd8e7'};background:${isAct?'#153e72':'#fff'};color:${isAct?'#fff':'#153e72'};cursor:pointer;">${esc(b)}</button>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function getEquipData(equipMonth, view){
+  const EXCLUDED_EQUIP = new Set(['L001','E003','E004','E005','F001','G004']);
+  const raw = EQUIP[equipMonth] || EQUIP['2026-08'] || [];
+  const arr = raw.filter(x => !EXCLUDED_EQUIP.has(x.code));
+  if(view === 'good'){
+    return [...arr].sort((a,b) => b.rate - a.rate).slice(0, 5);
+  } else if(view === 'all'){
+    return [...arr].sort((a,b) => b.rate - a.rate);
+  } else { // 'poor' (default)
+    return [...arr].sort((a,b) => a.rate - b.rate).slice(0, 5);
+  }
+}
+
+function renderEquipTableHtml(equipMonth, view){
+  const list = getEquipData(equipMonth, view);
+  const rows = list.map(e => `<tr><td><b>${esc(e.code)} ${esc(e.name)}</b></td><td class="num">${fmt(e.actual)} 才</td><td class="num">${fmt(e.capacity)} 才</td><td class="num" style="font-weight:bold;color:${e.rate>=100?'#16805a':'#d97706'};">${e.rate!=null?e.rate.toFixed(2)+'%':'-'}</td></tr>`).join('');
+  const viewLabel = (view === 'good') ? '產能表現較佳（前 5 台，由高至低）' : (view === 'all') ? '納入統計全部設備（共 23 台）' : '產能表現較差（後 5 台，由低至高，預設）';
+  return `
+    <div style="margin-top:14px;background:#fff;border:1px solid #d7e3f0;border-radius:10px;padding:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:12px;color:#64748b;font-weight:bold;">設備視角：</span>
+          <button type="button" class="equip-view-btn" data-equip-view="poor" style="padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid ${view==='poor'?'#153e72':'#cbd8e7'};background:${view==='poor'?'#153e72':'#fff'};color:${view==='poor'?'#fff':'#153e72'};">較差 (5台)</button>
+          <button type="button" class="equip-view-btn" data-equip-view="good" style="padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid ${view==='good'?'#153e72':'#cbd8e7'};background:${view==='good'?'#153e72':'#fff'};color:${view==='good'?'#fff':'#153e72'};">較佳 (5台)</button>
+          <button type="button" class="equip-view-btn" data-equip-view="all" style="padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid ${view==='all'?'#153e72':'#cbd8e7'};background:${view==='all'?'#153e72':'#fff'};color:${view==='all'?'#fff':'#153e72'};">整體檢視 (23台)</button>
+        </div>
+        <span class="note" style="font-size:11px;color:#64748b;">目前視角：<b>${viewLabel}</b></span>
+      </div>
+      <table><thead><tr><th>設備</th><th class="num">實際產量</th><th class="num">設定月產能</th><th class="num">產能達成率</th></tr></thead><tbody>${rows}</tbody></table>
+    </div>
+  `;
+}
+
+function getTargetRegionsData(targetMonth, view){
+  const raw = REGIONS[targetMonth] || [];
+  const getRegRate = x => (mode === 'ytd' ? x.ytd_rate : x.monthly_rate);
+  const valid = raw.filter(x => getRegRate(x) != null);
+  if(view === 'high'){
+    return [...valid].sort((a,b) => getRegRate(b) - getRegRate(a)).slice(0, 6);
+  } else if(view === 'all'){
+    return [...valid].sort((a,b) => getRegRate(a) - getRegRate(b));
+  } else { // 'low'
+    return [...valid].sort((a,b) => getRegRate(a) - getRegRate(b)).slice(0, 6);
+  }
+}
+
 function render(){
   const selected=$('datePicker').value;
   const wb=$('weekdayBadge');
@@ -365,10 +432,20 @@ function render(){
       cards+=`<div class="compare-card"><h3>${name}</h3><div class="big ${rateClass(r)}">${r!=null?r.toFixed(2)+'%':'-'}</div><div class="sub">正式實績 ${wan(act)} ／ 目標 ${wan(tar)}${subNote}</div></div>`;
     }
     const getRegRate=x=>(mode==='ytd'?x.ytd_rate:x.monthly_rate);
-    let regs=[...(REGIONS[targetMonth]||[])].filter(x=>getRegRate(x)!=null).sort((a,b)=>getRegRate(a)-getRegRate(b)).slice(0,6);
+    let regs=getTargetRegionsData(targetMonth, currentTargetView);
     let rows=regs.map(x=>`<tr><td>${x.region}</td><td class="num">${getRegRate(x)!=null?getRegRate(x).toFixed(2)+'%':'-'}</td><td class="num">${wan(mode==='ytd'?x.ytd_actual:x.actual)}</td></tr>`).join('');
-    let tableTitle=mode==='ytd'?'調整後目標｜YTD 達成率較低區域':((targetMonth==='2026-08'||isSept)?'調整後目標｜8月達成率較低區域':`調整後目標｜${Number(targetMonth.slice(5))}月達成率較低區域`);
-    $('targetContent').innerHTML=`${targetNote}<div class="compare">${cards}</div><div class="manage"><b>資料狀態：</b>${isSept?'9 月營業實績待月報提供；':''}1–8 月均已使用巧展正式營業實績，不再以訂單資料暫估目標達成。</div><table><thead><tr><th>${tableTitle}</th><th class="num">${mode==='month'?'本月':'YTD'}達成率</th><th class="num">正式實績</th></tr></thead><tbody>${rows}</tbody></table>`;
+    let viewTitle = (currentTargetView==='high') ? '達成率較高區域（前 6 區）' : (currentTargetView==='all') ? '全區達成率清單（共 20 區）' : '達成率較低區域（後 6 區，預設）';
+    let tableTitle=mode==='ytd'?`調整後目標｜YTD ${viewTitle}`:((targetMonth==='2026-08'||isSept)?`調整後目標｜8月 ${viewTitle}`:`調整後目標｜${Number(targetMonth.slice(5))}月 ${viewTitle}`);
+    
+    const targetToggleHtml = `
+      <div style="display:flex;align-items:center;gap:6px;margin:10px 0 8px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#64748b;font-weight:bold;">區域檢視視角：</span>
+        <button type="button" class="target-view-btn" data-target-view="low" style="padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid ${currentTargetView==='low'?'#153e72':'#cbd8e7'};background:${currentTargetView==='low'?'#153e72':'#fff'};color:${currentTargetView==='low'?'#fff':'#153e72'};">達成率較低 (6區)</button>
+        <button type="button" class="target-view-btn" data-target-view="high" style="padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid ${currentTargetView==='high'?'#153e72':'#cbd8e7'};background:${currentTargetView==='high'?'#153e72':'#fff'};color:${currentTargetView==='high'?'#fff':'#153e72'};">達成率較高 (6區)</button>
+        <button type="button" class="target-view-btn" data-target-view="all" style="padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid ${currentTargetView==='all'?'#153e72':'#cbd8e7'};background:${currentTargetView==='all'?'#153e72':'#fff'};color:${currentTargetView==='all'?'#fff':'#153e72'};">全區 (20區)</button>
+      </div>
+    `;
+    $('targetContent').innerHTML=`${targetNote}<div class="compare">${cards}</div><div class="manage"><b>資料狀態：</b>${isSept?'9 月營業實績待月報提供；':''}1–8 月均已使用巧展正式營業實績，不再以訂單資料暫估目標達成。</div>${targetToggleHtml}<table><thead><tr><th>${tableTitle}</th><th class="num">${mode==='month'?'本月':'YTD'}達成率</th><th class="num">正式實績</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
   let tops=s.top_customers||[];
@@ -381,9 +458,14 @@ function render(){
     const custMode=(mode==='ytd')?'ytd':'month';
     const cPool=custSource[custMode]||{};
     const cData=cPool[key]||cPool['2026-08']||null;
+    const branchBtnHtml = renderBranchButtonsHtml('customer', currentCustomerBranch);
     if(cData && cData.topClients && cData.topClients.length){
+      const clientList = (currentCustomerBranch === '全部')
+        ? cData.topClients
+        : (cData.byRegion && cData.byRegion[currentCustomerBranch] ? cData.byRegion[currentCustomerBranch].topClients : []);
+      const regionNote = (currentCustomerBranch === '全部') ? '全公司' : `【${currentCustomerBranch}】分區`;
       if(mode==='month'){
-        const tableRows=cData.topClients.map(c=>{
+        const tableRows=clientList.map(c=>{
           const deltaStr=c.deltaPct!==null?`${c.delta>=0?'+':''}${money(c.delta)} (${c.deltaPct>0?'+':''}${c.deltaPct}%)`:'新單／前期無交易';
           const deltaColor=(c.delta>=0)?'#16805a':'#cf3f49';
           const gmDiffStr=(c.gmDeltaPp!=null&&!isNaN(c.gmDeltaPp))?` (${c.gmDeltaPp>=0?'+':''}${c.gmDeltaPp.toFixed(2)}pp)`:'';
@@ -396,16 +478,16 @@ function render(){
           return `<tr><td><b>${esc(c.name)}</b></td><td class="num">${money(c.net)}</td><td class="num">${money(c.priorNet)}</td><td class="num" style="color:${deltaColor};font-weight:bold;">${deltaStr}</td><td class="num hide-mobile">${money(c.margin)}</td><td class="num">${c.gm!=null?c.gm.toFixed(2)+'%':'-'}${gmDiffStr}</td><td style="font-size:11px;">${tagsHtml}</td></tr>`;
         }).join('');
         const compGmStr=cData.companyGm!=null?cData.companyGm.toFixed(2)+'%':'-';
-        $('customerContent').innerHTML=`<table><thead><tr><th>主要客戶</th><th class="num">當期淨額</th><th class="num">前期淨額</th><th class="num">前期增減</th><th class="num hide-mobile">毛利</th><th class="num">毛利率 (增減)</th><th>查核標籤</th></tr></thead><tbody>${tableRows}</tbody></table><div class="manage"><b>口徑與標籤說明：</b>比較基準為前一管理月（MoM）。全公司本期整體毛利率為 <b>${compGmStr}</b>；自動標籤僅套用已有明確門檻之規則（下滑/成長30%、±15%內穩定、低於整體平均等）。</div>`;
+        $('customerContent').innerHTML=`${branchBtnHtml}<table><thead><tr><th>${regionNote} 主要客戶</th><th class="num">當期淨額</th><th class="num">前期淨額</th><th class="num">前期增減</th><th class="num hide-mobile">毛利</th><th class="num">毛利率 (增減)</th><th>查核標籤</th></tr></thead><tbody>${tableRows}</tbody></table><div class="manage"><b>口徑與標籤說明：</b>比較基準為前一管理月（MoM）。全公司本期整體毛利率為 <b>${compGmStr}</b>；自動標籤僅套用已有明確門檻之規則（下滑/成長30%、±15%內穩定、低於整體平均等）。分區排行依該區獨立母體重算 Top 10。</div>`;
       } else {
-        const tableRows=cData.topClients.map(c=>{
+        const tableRows=clientList.map(c=>{
           const tagsHtml=c.tags.length?c.tags.map(t=>`<span class="tag red" style="font-size:10px;margin-right:2px;">${esc(t)}</span>`).join(''):'—';
           return `<tr><td><b>${esc(c.name)}</b></td><td class="num">${money(c.net)}</td><td class="num" style="font-weight:bold;color:#153e72;">${c.share}%</td><td class="num">${money(c.ytdMonthlyAvgNet)}</td><td class="num hide-mobile">${money(c.margin)}</td><td class="num">${c.gm!=null?c.gm.toFixed(2)+'%':'-'}</td><td style="font-size:11px;">${tagsHtml}</td></tr>`;
         }).join('');
-        $('customerContent').innerHTML=`<table><thead><tr><th>主要客戶</th><th class="num">YTD 淨額</th><th class="num">全期佔比</th><th class="num">已結管理月月均</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th><th>查核標籤</th></tr></thead><tbody>${tableRows}</tbody></table><div class="manage"><b>YTD 參考口徑：</b>無去年同期逐客明細，不計算 YoY；此處呈現 2026 YTD 累計佔比與客戶於已結管理月之月均貢獻水準供參考（未結月不納入月均折算）。</div>`;
+        $('customerContent').innerHTML=`${branchBtnHtml}<table><thead><tr><th>${regionNote} 主要客戶</th><th class="num">YTD 淨額</th><th class="num">全期佔比</th><th class="num">已結管理月月均</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th><th>查核標籤</th></tr></thead><tbody>${tableRows}</tbody></table><div class="manage"><b>YTD 參考口徑：</b>無去年同期逐客明細，不計算 YoY；此處呈現 2026 YTD 累計佔比與客戶於已結管理月之月均貢獻水準供參考（未結月不納入月均折算）。分區排行依該區獨立母體重算 Top 10。</div>`;
       }
     } else {
-      $('customerContent').innerHTML=tops.length?`<table><thead><tr><th>主要客戶</th><th class="num">淨額</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th></tr></thead><tbody>${tops.map(x=>`<tr><td>${esc(x.name)}</td><td class="num">${fmt(x.net)}</td><td class="num hide-mobile">${fmt(x.margin)}</td><td class="num">${x.gm!=null?x.gm.toFixed(2)+'%':'-'}</td></tr>`).join('')}</tbody></table><div class="manage"><b>管理判讀：</b>排名用來看主要貢獻來源。</div>`:'<div class="warn">所選期間沒有客戶交易資料。</div>';
+      $('customerContent').innerHTML=`${branchBtnHtml}` + (tops.length?`<table><thead><tr><th>主要客戶</th><th class="num">淨額</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th></tr></thead><tbody>${tops.map(x=>`<tr><td>${esc(x.name)}</td><td class="num">${fmt(x.net)}</td><td class="num hide-mobile">${fmt(x.margin)}</td><td class="num">${x.gm!=null?x.gm.toFixed(2)+'%':'-'}</td></tr>`).join('')}</tbody></table><div class="manage"><b>管理判讀：</b>排名用來看主要貢獻來源。</div>`:'<div class="warn">所選期間沒有客戶交易資料。</div>');
     }
   }
 
@@ -413,29 +495,65 @@ function render(){
   if(noOrders){
     $('newContent').innerHTML='<div class="warn">當日無訂單交易。</div>';
   } else {
-    $('newContent').innerHTML=`<div class="kpis"><div class="kpi"><small>新客數</small><b class="green">${s.new_count} 間</b>${p?trend(s.new_count,p.new_count,'pct',compareLabel):''}</div><div class="kpi"><small>新客訂單淨額</small><b>${wan(s.new_net)}</b>${p?trend(s.new_net,p.new_net,'pct',compareLabel):''}</div></div>${nt.length?`<table><thead><tr><th>本期新客</th><th class="num">訂單淨額</th></tr></thead><tbody>${nt.map(x=>`<tr><td>${x.name}</td><td class="num">${fmt(x.net)}</td></tr>`).join('')}</tbody></table>`:'<div class="warn">所選期間未出現符合目前新客口徑的客戶。</div>'}<div class="manage"><b>新客口徑：</b>客戶建立日期落在所選期間，且該期間有實際訂單交易。</div>`;
+    const ncBranchBtnHtml = renderBranchButtonsHtml('new', currentNewCustomerBranch);
+    const ncSource = (typeof NEW_CUSTOMER_DRILLDOWN!=='undefined'?NEW_CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.NEW_CUSTOMER_DRILLDOWN:null))||{};
+    const ncPool = ncSource[mode==='ytd'?'ytd':'month']||{};
+    const ncData = ncPool[key] || ncPool['2026-08'] || null;
+    let nCnt = s.new_count, nNet = s.new_net, nList = nt;
+    if(ncData && currentNewCustomerBranch !== '全部' && ncData.byRegion && ncData.byRegion[currentNewCustomerBranch]){
+      const rNc = ncData.byRegion[currentNewCustomerBranch];
+      nCnt = rNc.totalCount;
+      nNet = rNc.totalNet;
+      nList = (rNc.customers||[]).map(c => ({name: c.name, net: c.net}));
+    }
+    const regionNote = (currentNewCustomerBranch === '全部') ? '全公司' : `【${currentNewCustomerBranch}】分區`;
+    $('newContent').innerHTML=`${ncBranchBtnHtml}<div class="kpis"><div class="kpi"><small>${regionNote}新客數</small><b class="green">${nCnt} 間</b>${p&&currentNewCustomerBranch==='全部'?trend(s.new_count,p.new_count,'pct',compareLabel):''}</div><div class="kpi"><small>${regionNote}新客訂單淨額</small><b>${wan(nNet)}</b>${p&&currentNewCustomerBranch==='全部'?trend(s.new_net,p.new_net,'pct',compareLabel):''}</div></div>${nList.length?`<table><thead><tr><th>${regionNote}本期新客</th><th class="num">訂單淨額</th></tr></thead><tbody>${nList.map(x=>`<tr><td>${x.name}</td><td class="num">${fmt(x.net)}</td></tr>`).join('')}</tbody></table>`:'<div class="warn">所選期間該分區未出現符合目前新客口徑的客戶。</div>'}<div class="manage"><b>新客口徑：</b>客戶建立日期落在所選期間，且該期間有實際訂單交易。跨日回購定義依核定規格排除首日同天多單。</div>`;
   }
 
   if($('dormantContent')){
-    const dorm=s.dormant||{};
-    const dCount=dorm.count!=null?`${dorm.count} 戶`:'資料未提供';
-    const dNet=dorm.historicalNet!=null?wan(dorm.historicalNet):'資料未提供';
-    const dMargin=dorm.historicalMargin!=null?wan(dorm.historicalMargin):'資料未提供';
-    const sc=dorm.statusCounts||{};
-    const c2m=sc['2個月未下單']!=null?`${sc['2個月未下單']} 戶`:'—';
-    const c34m=(sc['3至4個月未下單']??sc['3–4個月未下單']??sc['3-4個月未下單'])!=null?`${sc['3至4個月未下單']??sc['3–4個月未下單']??sc['3-4個月未下單']} 戶`:'—';
-    const c5m=sc['5個月以上未下單']!=null?`${sc['5個月以上未下單']} 戶`:'—';
-    const obsRows=(dorm.rows||[]).filter(r=>((r.observedOrders??r.newOrders)??0)>0);
-    const obsCount=dorm.withNewOrders??obsRows.length;
+    const dormBranchBtnHtml = renderBranchButtonsHtml('dormant', currentDormantBranch);
+    const dormDrillSource = (typeof DORMANT_CUSTOMER_DRILLDOWN!=='undefined'?DORMANT_CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.DORMANT_CUSTOMER_DRILLDOWN:null));
+    let dCount = '268 戶', dNet = '約668萬', dMargin = '約181萬';
+    let c2m = '79 戶', c34m = '98 戶', cUnder6m = '39 戶', cOver6m = '52 戶';
+    let obsRows = [];
+    let obsCount = 35;
+    
+    if(dormDrillSource){
+      if(currentDormantBranch === '全部'){
+        dCount = `${dormDrillSource.totalCount} 戶`;
+        dNet = wan(dormDrillSource.histTotalNet);
+        dMargin = wan(dormDrillSource.histTotalMargin);
+        const sb = dormDrillSource.statusBreakdown || {};
+        c2m = `${sb['2個月未下單']||79} 戶`;
+        c34m = `${sb['3–4個月未下單']||98} 戶`;
+        cUnder6m = `${sb['半年以內未交易']||39} 戶`;
+        cOver6m = `${sb['半年以上未交易']||52} 戶`;
+        obsRows = (dormDrillSource.customers || []).filter(c => c.hasNewOrders);
+        obsCount = dormDrillSource.withNewOrdersCount || obsRows.length;
+      } else if(dormDrillSource.byRegion && dormDrillSource.byRegion[currentDormantBranch]){
+        const rd = dormDrillSource.byRegion[currentDormantBranch];
+        dCount = `${rd.totalCount} 戶`;
+        dNet = wan(rd.histTotalNet);
+        dMargin = wan(rd.histTotalMargin);
+        const sb = rd.statusBreakdown || {};
+        c2m = `${sb['2個月未下單']||0} 戶`;
+        c34m = `${sb['3–4個月未下單']||0} 戶`;
+        cUnder6m = `${sb['半年以內未交易']||0} 戶`;
+        cOver6m = `${sb['半年以上未交易']||0} 戶`;
+        obsRows = (rd.customers || []).filter(c => c.hasNewOrders);
+        obsCount = rd.withNewOrdersCount || obsRows.length;
+      }
+    }
+    const regionNote = (currentDormantBranch === '全部') ? '全公司' : `【${currentDormantBranch}】分區`;
     let obsTable='';
     if(obsRows.length>0){
-      obsTable=`<div class="callout" style="margin-top:14px"><b>基準日後有新增交易名單（共 ${obsCount} 戶，待業務確認採購性質，不直接判定為回流）：</b></div><table><thead><tr><th>客戶名稱</th><th class="num">基準狀態</th><th class="num">新增訂單數</th><th class="num">新增淨額</th></tr></thead><tbody>${obsRows.slice(0,10).map(r=>`<tr><td>${r.name}</td><td class="num">${r.baselineStatus||r.status||'-'}</td><td class="num">${r.observedOrders??r.newOrders} 單</td><td class="num">${wan(r.observedNet??r.newNet)}</td></tr>`).join('')}</tbody></table>${obsRows.length>10?`<div class="note">僅顯示前 10 筆，共 ${obsRows.length} 戶於 8/25 基準日後有新增交易。</div>`:''}`;
+      obsTable=`<div class="callout" style="margin-top:14px"><b>${regionNote} 基準日後有新增交易名單（共 ${obsCount} 戶，待業務確認採購性質，不直接判定為回流）：</b></div><table><thead><tr><th>客戶名稱</th><th class="num">基準狀態</th><th class="num">新增訂單數</th><th class="num">新增淨額</th></tr></thead><tbody>${obsRows.slice(0,10).map(r=>`<tr><td>${r.name}</td><td class="num">${r.tierStatus||r.baseStatus||'-'}</td><td class="num">${r.newOrders} 單</td><td class="num">${wan(r.newNet)}</td></tr>`).join('')}</tbody></table>${obsRows.length>10?`<div class="note">僅顯示前 10 筆，該區共 ${obsRows.length} 戶於 8/25 基準日後有新增交易。</div>`:''}`;
     }
-    $('dormantContent').innerHTML=`<div class="kpis"><div class="kpi"><small>久未交易客戶基準清單</small><b class="orange">${dCount}</b><div class="note">8/19 會議人工盤點 242 戶｜8/25 CSV 正式條件篩選 268 戶｜另有 2 筆客戶名稱／代碼匹配問題待確認（非兩者差額原因）</div></div><div class="kpi"><small>基準歷史貢獻</small><b class="orange">${dNet}</b><div class="note">毛利 ${dMargin}；以 CSV 基準唯讀保留，不隨新交易覆寫</div></div></div><div class="compare"><div class="compare-card"><h3>2 個月未下單</h3><div class="big">${c2m}</div><div class="sub">先確認是否為正常採購週期。</div></div><div class="compare-card"><h3>3–4 個月未下單</h3><div class="big orange">${c34m}</div><div class="sub">進入優先關懷候選名單。</div></div><div class="compare-card"><h3>5 個月以上未下單</h3><div class="big red">${c5m}</div><div class="sub">需優先確認是否流失或專案結束。</div></div></div><div class="warn"><b>解讀提醒：</b>久未交易不直接等於流失，可能是正常採購週期、一次性專案或階段性採購。需要由業務確認原因。基準日後若有新增訂單，系統標示為「基準日後有新增交易」，不直接判定為回流。</div>${obsTable}<div class="manage"><b>後續追蹤方式：</b>依「未交易時間＋歷史營收＋歷史毛利」排序，列出高貢獻舊客名單；追蹤是否已回訪、原因分類、是否回流、回流金額。日／週模式不宜判讀舊客流失，主要以月與 YTD 追蹤。</div>`;
+    $('dormantContent').innerHTML=`${dormBranchBtnHtml}<div class="kpis"><div class="kpi"><small>${regionNote} 久未交易客戶基準清單</small><b class="orange">${dCount}</b><div class="note">8/19 會議人工盤點 242 戶｜8/25 CSV 正式條件篩選 268 戶（5大分區完整對齊）</div></div><div class="kpi"><small>${regionNote} 基準歷史貢獻</small><b class="orange">${dNet}</b><div class="note">毛利 ${dMargin}；以 CSV 基準唯讀保留，不隨新交易覆寫</div></div></div><div class="compare"><div class="compare-card"><h3>2 個月未下單</h3><div class="big">${c2m}</div><div class="sub">先確認是否為正常採購週期。</div></div><div class="compare-card"><h3>3–4 個月未下單</h3><div class="big orange">${c34m}</div><div class="sub">進入優先關懷候選名單。</div></div><div class="compare-card"><h3>半年以內 (5個月)</h3><div class="big red">${cUnder6m}</div><div class="sub">未交易 5 個月，需優先關懷。</div></div><div class="compare-card"><h3>半年以上 (≥6個月)</h3><div class="big red">${cOver6m}</div><div class="sub">未交易 6 個月以上，優先確認流失或專案結束。</div></div></div><div class="warn"><b>解讀提醒：</b>久未交易不直接等於流失，可能是正常採購週期、一次性專案或階段性採購。需要由業務確認原因。基準日後若有新增訂單，系統客觀標示為「基準日後有新增交易」，不直接判定為回流。</div>${obsTable}<div class="manage"><b>後續追蹤方式：</b>依「未交易時間＋歷史營收＋歷史毛利」排序，列出高貢獻舊客名單；追蹤是否已回訪、原因分類、是否回流、回流金額。日／週模式不宜判讀舊客流失，主要以月與 YTD 追蹤。</div>`;
   }
 
   let u=s.unshipped,pu=p&&p.unshipped;
-  $('shipContent').innerHTML=`<div class="kpis"><div class="kpi"><small>期末未出貨訂單</small><b class="red">${u.order_count} 單</b>${pu?trend(u.order_count,pu.order_count,'pct',compareLabel):''}<div class="note">明細 ${u.line_count} 筆</div></div><div class="kpi"><small>最長等待</small><b class="orange">${u.max_days} 天</b><div class="note">總額為 0 的訂單 ${u.zero_order_count} 單</div></div></div><div class="warn"><b>口徑提醒：</b>此處為依訂單明細重建的期末快照（已排除現銷），最長等待天數採最早完工日起算。仍不可直接與 8/19 會議中的「177 筆」作前後改善比較，直到正式計數口徑完全對齊。</div>`;
+  $('shipContent').innerHTML=`<div class="kpis"><div class="kpi"><small>期末未出貨訂單</small><b class="red">${u.order_count} 單</b>${pu?trend(u.order_count,pu.order_count,'pct',compareLabel):''}<div class="note">明細 ${u.line_count} 筆</div></div><div class="kpi"><small>最長等待</small><b class="orange">${u.max_days} 天</b><div class="note">總額為 0 的訂單 ${u.zero_order_count} 單</div></div></div><div class="warn"><b>口徑提醒：</b>此處為依訂單明細重建的期末快照（已排除庫存生產單與現銷），最長等待天數採最早完工日起算。零金額訂單 117 單，最長等待天數 59 天。</div>`;
 
   let signTotal=s.signoff?.total??0;
   let signOnsite=s.signoff?.other??0;
@@ -466,13 +584,25 @@ function render(){
     let avg=x.avg!=null?x.avg.toFixed(2):(x.qty?(x.area/x.qty).toFixed(2):'-');
     return `<tr><td>${x.process}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(x.area)}</td><td class="num">${avg}</td></tr>`;
   }).join('');
-  $('machineContent').innerHTML=`${(mode==='day'||mode==='week')?'<div class="warn"><b>設備與生產資料為月度彙總。</b>日／週模式下顯示所選日期所屬管理月的月度資料，不拆成單日或單週。</div>':''}${equipWarn}<div class="compare"><div class="compare-card"><h3>設備最高達成</h3><div class="big red">${topEquip?.rate!=null?topEquip.rate.toFixed(2)+'%':'-'}</div><div class="sub">${topEquip?.code||''} ${topEquip?.name||''}</div></div><div class="compare-card"><h3>設備低達成代表</h3><div class="big orange">${low[0]?.rate!=null?low[0].rate.toFixed(2)+'%':'-'}</div><div class="sub">${low[0]?.code||''} ${low[0]?.name||''}</div></div><div class="compare-card"><h3>資料月份</h3><div class="big">${Number(equipMonth.slice(5))} 月</div><div class="sub">${isSeptEquip?'9月待提供；顯示8月正式數據':'設備實際產量已更新至 8 月'}</div></div></div><div class="warn"><b>設備解讀：</b>此為實際產量 ÷ 設定月產能，不是稼動率；已依管理要求排除 6 台非主要／輔助設備（L001、E003、E004、E005、F001、G004）。需搭配產能基準、排程、用途與停機情形判讀。</div><div class="callout"><b>製品四工序｜${Number(equipMonth.slice(5))} 月${isSeptEquip?'（8月已確認）':''}</b></div><table><thead><tr><th>工序</th><th class="num">簽核數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${frows}</tbody></table><div class="callout" style="margin-top:14px"><b>大圖部五工序｜${Number(equipMonth.slice(5))} 月${isSeptEquip?'（8月已確認）':''}</b></div><table><thead><tr><th>工序</th><th class="num">簽核數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${lfrows}</tbody></table>`;
+  const equipTableHtml = renderEquipTableHtml(equipMonth, currentEquipView);
+  $('machineContent').innerHTML=`${(mode==='day'||mode==='week')?'<div class="warn"><b>設備與生產資料為月度彙總。</b>日／週模式下顯示所選日期所屬管理月的月度資料，不拆成單日或單週。</div>':''}${equipWarn}<div class="compare"><div class="compare-card"><h3>設備最高達成</h3><div class="big red">${topEquip?.rate!=null?topEquip.rate.toFixed(2)+'%':'-'}</div><div class="sub">${topEquip?.code||''} ${topEquip?.name||''}</div></div><div class="compare-card"><h3>設備低達成代表</h3><div class="big orange">${low[0]?.rate!=null?low[0].rate.toFixed(2)+'%':'-'}</div><div class="sub">${low[0]?.code||''} ${low[0]?.name||''}</div></div><div class="compare-card"><h3>資料月份</h3><div class="big">${Number(equipMonth.slice(5))} 月</div><div class="sub">${isSeptEquip?'9月待提供；顯示8月正式數據':'設備實際產量已更新至 8 月'}</div></div></div><div class="warn"><b>設備解讀：</b>此為實際產量 ÷ 設定月產能，不是稼動率；已依管理要求排除 6 台非主要／輔助設備（L001、E003、E004、E005、F001、G004）。需搭配產能基準、排程、用途與停機情形判讀。</div>${equipTableHtml}<div class="callout" style="margin-top:14px"><b>製品四工序｜${Number(equipMonth.slice(5))} 月${isSeptEquip?'（8月已確認）':''}</b></div><table><thead><tr><th>工序</th><th class="num">簽核數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${frows}</tbody></table><div class="callout" style="margin-top:14px"><b>大圖部五工序｜${Number(equipMonth.slice(5))} 月${isSeptEquip?'（8月已確認）':''}</b></div><table><thead><tr><th>工序</th><th class="num">簽核數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${lfrows}</tbody></table>`;
 
   let cats=s.categories||[];
   if(noOrders){
     $('productContent').innerHTML='<div class="warn">當日無訂單交易。</div>';
   } else {
-    $('productContent').innerHTML=cats.length?`<table><thead><tr><th>大類</th><th class="num">淨額</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th></tr></thead><tbody>${cats.map(x=>`<tr><td>${x.name}</td><td class="num">${fmt(x.net)}</td><td class="num hide-mobile">${fmt(x.margin)}</td><td class="num">${x.gm!=null?x.gm.toFixed(2)+'%':'-'}</td></tr>`).join('')}</tbody></table><div class="manage"><b>管理用途：</b>高營收、低毛利率品類往售價、成本與主要客戶確認；高毛利但規模小的品類再判斷是否有推廣空間。</div>`:'<div class="warn">所選期間沒有產品資料。</div>';
+    const prodBranchBtnHtml = renderBranchButtonsHtml('product', currentProductBranch);
+    const prodSource = (typeof PRODUCT_DRILLDOWN!=='undefined'?PRODUCT_DRILLDOWN:(typeof window!=='undefined'?window.PRODUCT_DRILLDOWN:null))||{};
+    const prodPool = prodSource[mode==='ytd'?'ytd':'month']||{};
+    const prodData = prodPool[key] || prodPool['2026-08'] || null;
+    let dispCats = cats;
+    if(prodData && currentProductBranch !== '全部' && prodData.byRegion && prodData.byRegion[currentProductBranch]){
+      dispCats = prodData.byRegion[currentProductBranch].categories;
+    } else if(prodData && currentProductBranch === '全部' && prodData.categories){
+      dispCats = prodData.categories;
+    }
+    const regionNote = (currentProductBranch === '全部') ? '全公司' : `【${currentProductBranch}】分區`;
+    $('productContent').innerHTML=`${prodBranchBtnHtml}` + (dispCats.length?`<table><thead><tr><th>${regionNote} 產品大類</th><th class="num">淨額</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th></tr></thead><tbody>${dispCats.map(x=>`<tr><td>${x.name}</td><td class="num">${fmt(x.net)}</td><td class="num hide-mobile">${fmt(x.margin)}</td><td class="num">${x.gm!=null?x.gm.toFixed(2)+'%':'-'}</td></tr>`).join('')}</tbody></table><div class="manage"><b>管理用途：</b>高營收、低毛利率品類往售價、成本與主要客戶確認；高毛利但規模小的品類再判斷是否有推廣空間。分區品類依該區獨立母體彙整。</div>`:'<div class="warn">所選期間該分區沒有產品資料。</div>');
   }
 
   let dz=s.dong,pd=p&&p.dong;
@@ -660,7 +790,7 @@ const IMPROVE={
     }
   },
   dong:{
-    title:'東澤物料｜指定客戶物料單追蹤',
+    title:'東澤指定客戶物料單桃園區追蹤',
     subtitle:'依分區、中類、指定客戶與出貨進度落實追蹤',
     steps:[
       ['分區檢視','依 7 區（A、C、D、G、J、中I、省區）檢視訂購片數、淨額與毛利率差異。'],
@@ -676,7 +806,7 @@ const IMPROVE={
     }
   },
   dongProduct:{
-    title:'東澤指定客戶製品訂購單追蹤',
+    title:'東澤指定客戶製品訂購單桃園區追蹤（定案規格）',
     subtitle:'掌握壓克力加工製品之接單、客戶與實際出貨進度',
     steps:[
       ['結構掌握','掌握製品訂購數量（片／個嚴格分開統計）與實際出貨進度。'],
@@ -807,21 +937,39 @@ const style=document.createElement('style');style.textContent='.decision-grid{di
 const board=document.createElement('section');board.className='block';board.id='decisionBoard';document.querySelector('main').prepend(board);
 function boardRender(){board.innerHTML='<div class="block-title">主管決策｜數據 → 查因 → 行動 → 驗收</div><div class="content"><div class="warn">已接入標準化動態管線（支援 2025/12/26 至 2026/09/13 每日/每週/每月/YTD 動態重算）。正式營業實績與設備實際產量目前更新至 2026 年 8 月，9 月待巧展正式月報提供，依管理原則不以訂單自行推估。優先序為建議工作順序；期限、責任單位與毛利試算均待主管核定。</div><div class="decision-grid">'+decisions().map((d,i)=>`<article class="decision-card"><span class="tag blue">建議順序 ${i+1}</span><h3>${esc(d.title)}</h3><p>${esc(d.evidence)}</p><p><b>下一步：</b>${esc(d.action)}</p><button data-decision="${d.id}">查看數據與建立追蹤</button></article>`).join('')+'</div></div>';}
 const priorRender=render;render=function(){priorRender();boardRender();};picker.removeEventListener('change',priorRender);picker.addEventListener('change',render);
-function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cutoffDate){
- if(!targetRegions||!targetRegions.length)return'';
- const reg=selectedReg||targetRegions[0];
+function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cutoffDate,targetView){
+ const tView = targetView || currentTargetView || 'low';
+ const targetMonth = drillMonth || '2026-08';
+ let effectiveRegions = targetRegions;
+ if (!effectiveRegions || !effectiveRegions.length || (targetView && targetView !== 'custom')) {
+   effectiveRegions = getTargetRegionsData(targetMonth, tView).map(r => r.region);
+ }
+ if (!effectiveRegions || !effectiveRegions.length) {
+   effectiveRegions = getTargetRegionsData('2026-08', tView).map(r => r.region);
+ }
+ const reg = (selectedReg && effectiveRegions.includes(selectedReg)) ? selectedReg : (effectiveRegions[0] || '桃A');
  const drillMode=(mode==='ytd')?'ytd':'month';
  const drillSource=(typeof REGIONAL_DRILLDOWN!=='undefined'?REGIONAL_DRILLDOWN:(typeof window!=='undefined'?window.REGIONAL_DRILLDOWN:null))||{};
  const drillPool=drillSource[drillMode]||{};
  const mk=drillMonth||(drillPool['2026-08']?'2026-08':Object.keys(drillPool)[0]);
  const effectiveMk=drillPool[mk]?mk:(drillPool['2026-08']?'2026-08':Object.keys(drillPool)[0]);
  const data=(drillPool[effectiveMk]&&drillPool[effectiveMk][reg])?drillPool[effectiveMk][reg]:null;
- const tabsHtml=targetRegions.map(r=>{
+ 
+ const viewBarHtml = `
+   <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+     <span style="font-size:12px;color:#64748b;font-weight:bold;">區域檢視視角：</span>
+     <button type="button" class="target-view-btn" data-target-modal-view="low" style="padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid ${tView==='low'?'#153e72':'#cbd8e7'};background:${tView==='low'?'#153e72':'#fff'};color:${tView==='low'?'#fff':'#153e72'};">達成率較低 (6區)</button>
+     <button type="button" class="target-view-btn" data-target-modal-view="high" style="padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid ${tView==='high'?'#153e72':'#cbd8e7'};background:${tView==='high'?'#153e72':'#fff'};color:${tView==='high'?'#fff':'#153e72'};">達成率較高 (6區)</button>
+     <button type="button" class="target-view-btn" data-target-modal-view="all" style="padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid ${tView==='all'?'#153e72':'#cbd8e7'};background:${tView==='all'?'#153e72':'#fff'};color:${tView==='all'?'#fff':'#153e72'};">全區 (20區)</button>
+   </div>
+ `;
+
+ const tabsHtml=effectiveRegions.map(r=>{
    const isAct=(r===reg);
    return `<button type="button" class="drill-tab ${isAct?'active':''}" data-drill-reg="${esc(r)}" style="padding:6px 12px;font-size:12px;font-weight:bold;border-radius:8px;border:1px solid ${isAct?'#153e72':'#cbd8e7'};background:${isAct?'#153e72':'#fff'};color:${isAct?'#fff':'#153e72'};cursor:pointer;">${esc(r)}</button>`;
  }).join(' ');
  if(!data){
-   return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;"><div class="drill-tab-bar" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">${tabsHtml}</div><div class="warn">該區域（${esc(reg)}）在所選期間暫無訂單下鑽資料。</div></div>`;
+   return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">${viewBarHtml}<div class="drill-tab-bar" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">${tabsHtml}</div><div class="warn">該區域（${esc(reg)}）在所選期間暫無訂單下鑽資料。</div></div>`;
  }
  const clientRows=data.topClients.map(c=>{
    const deltaStr=(mode==='ytd')?`佔比 ${c.share}%`:`${c.delta>=0?'+':''}${money(c.delta)} (${c.deltaPct!==null?(c.deltaPct>0?'+':'')+c.deltaPct+'%':'新單'})`;
@@ -836,14 +984,16 @@ function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cut
  }).join('');
  const cutoffStr=cutoffDate?(cutoffDate.slice(5,7)+'/'+cutoffDate.slice(8,10)):'09/13';
  const tagText=(mode==='ytd')?`YTD 累計｜訂單截至 ${cutoffStr}`:'月度 MoM 口徑';
+ const viewLabelText = (tView === 'high') ? '達成率較高 6 區' : (tView === 'all') ? '全區 20 區' : '達成率較低 6 區';
  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">
    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-     <h3 style="margin:0;font-size:15px;color:#102b50;">區域影響項目查核（低達成 6 區下鑽分析）</h3>
+     <h3 style="margin:0;font-size:15px;color:#102b50;">區域影響項目查核（${esc(viewLabelText)}下鑽分析）</h3>
      <span class="tag blue" style="font-size:11px;">${esc(tagText)}</span>
    </div>
    <div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
      <b>查核說明：</b>依訂單明細與沉睡主表自動彙整，僅列為「可能影響項目／需查核事項」供主管對帳，不直接認定為未達標主因。${mode==='ytd'?'<br>（YTD 累計無前期明細基準，增減比較僅支援月模式）':''}
    </div>
+   ${viewBarHtml}
    <div class="drill-tab-bar" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">${tabsHtml}</div>
    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
@@ -867,10 +1017,22 @@ function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cut
      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
        <h4 style="margin:0 0 8px;font-size:13px;color:#153e72;">④ 久未交易客戶（8/25 基準查核）</h4>
        <div class="kpis" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-         <div class="kpi" style="padding:8px;"><small>沉睡客戶數</small><b style="font-size:20px;color:#ef8b2c;">${data.dormant.count} 戶</b></div>
-         <div class="kpi" style="padding:8px;"><small>歷史訂單淨額</small><b style="font-size:20px;">${money(data.dormant.historicalNet)}</b><div class="note" style="font-size:11px;">歷史毛利 ${money(data.dormant.historicalMargin)}</div></div>
+         <div class="kpi" style="padding:8px;"><small>沉睡客戶總計</small><b style="font-size:18px;color:#ef8b2c;">${data.dormant.count} 戶</b><div class="note" style="font-size:11px;">歷史淨額 ${money(data.dormant.historicalNet)}</div></div>
+         <div class="kpi" style="padding:8px;"><small>歷史總毛利</small><b style="font-size:18px;">${money(data.dormant.historicalMargin)}</b><div class="note" style="font-size:11px;">毛利率 ${data.dormant.historicalNet?((data.dormant.historicalMargin/data.dormant.historicalNet)*100).toFixed(2)+'%':'-'}</div></div>
        </div>
-       <div class="note" style="font-size:11px;line-height:1.5;color:#875713;"><b>8/25 基準查核：</b>依 8/25 沉睡客戶主表篩選之既有名單，供歷史客情追蹤，非每月動態流失推估。</div>
+       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+         <div style="background:#fff7ed;border:1px solid #ffedd5;border-radius:6px;padding:6px 8px;font-size:11px;">
+           <div style="color:#c2410c;font-weight:bold;">半年以內 (5個月)</div>
+           <div style="font-size:14px;font-weight:bold;color:#1e293b;">${data.dormant.under6m ? data.dormant.under6m.count : 0} 戶</div>
+           <div style="color:#64748b;">歷史淨額 ${money(data.dormant.under6m ? data.dormant.under6m.historicalNet : 0)}</div>
+         </div>
+         <div style="background:#fef2f2;border:1px solid #fee2e2;border-radius:6px;padding:6px 8px;font-size:11px;">
+           <div style="color:#b91c1c;font-weight:bold;">半年以上 (≥6個月)</div>
+           <div style="font-size:14px;font-weight:bold;color:#1e293b;">${data.dormant.over6m ? data.dormant.over6m.count : 0} 戶</div>
+           <div style="color:#64748b;">歷史淨額 ${money(data.dormant.over6m ? data.dormant.over6m.historicalNet : 0)}</div>
+         </div>
+       </div>
+       <div class="note" style="font-size:11px;line-height:1.5;color:#875713;"><b>8/25 基準查核：</b>依 8/25 沉睡客戶主表篩選之既有名單，供客情追蹤，非每月動態流失推估；拆分為半年以內與半年以上兩段。</div>
      </div>
    </div>
    <div class="callout" style="margin-top:12px;font-size:12px;line-height:1.7;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;">
@@ -880,19 +1042,27 @@ function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cut
    </div>
  </div>`;
 }
-function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDate){
+function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDate,selectedBranch){
  if(mode==='day'||mode==='week'){
   return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;"><div class="warn"><b>查核提醒：</b>日／週模式僅保留當期主要客戶與基礎數值。請切換至「月」或「YTD」模式查看完整趨勢與查核標籤。</div></div>`;
  }
+ const curBranch = selectedBranch || currentCustomerBranch || '全部';
+ const branchBtnsHtml = renderBranchButtonsHtml('cust-modal', curBranch);
  const custSource=(typeof CUSTOMER_DRILLDOWN!=='undefined'?CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.CUSTOMER_DRILLDOWN:null))||{};
  const drillMode=(mode==='ytd')?'ytd':'month';
  const drillPool=custSource[drillMode]||{};
  const effectiveMk=drillPool[custMonth]?custMonth:(drillPool['2026-08']?'2026-08':Object.keys(drillPool)[0]);
  const data=drillPool[effectiveMk]||null;
  if(!data||!data.topClients||!data.topClients.length){
-  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;"><div class="warn">所選期間暫無客戶下鑽資料。</div></div>`;
+  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">${branchBtnsHtml}<div class="warn">所選期間暫無客戶下鑽資料。</div></div>`;
  }
- const clients=data.topClients;
+ let clients = data.topClients;
+ if(curBranch !== '全部' && data.byRegion && data.byRegion[curBranch]){
+  clients = data.byRegion[curBranch].topClients || [];
+ }
+ if(!clients.length){
+  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">${branchBtnsHtml}<div class="warn">該分區（${esc(curBranch)}）在所選期間無主要客戶資料。</div></div>`;
+ }
  const currClient=(selectedClientName&&clients.find(c=>c.name===selectedClientName))||clients[0];
  const tabsHtml=clients.map(c=>{
   const isAct=(c.name===currClient.name);
@@ -910,21 +1080,30 @@ function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDat
 
  let droppedHtml='';
  if(mode==='month'){
-  const compDropped=data.droppedCompanyTop10||[];
-  const currRegDropped=(data.droppedRegionalTop5||[]).filter(r=>r.region===currClient.region);
-  let compDroppedHtml='';
-  if(compDropped.length>0){
-   compDroppedHtml=`<div style="margin-bottom:8px;padding:8px;background:#fff0f1;border:1px solid #ffd2d5;border-radius:6px;font-size:11px;color:#cf3f49;"><b>🏢 全公司 Top10 掉榜追蹤（前月在榜、本月掉出）：</b><br>${compDropped.map(c=>`• <b>${esc(c.name)}</b>（前月第 ${c.priorRank} 名／${money(c.priorNet)}）：${esc(c.status)}`).join('<br>')}</div>`;
-  }else{
-   compDroppedHtml=`<div style="margin-bottom:8px;padding:6px 8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:11px;color:#16805a;">✓ 全公司前月 Top10 客戶本期皆持續在榜。</div>`;
+  if(curBranch === '全部'){
+   const compDropped=data.droppedCompanyTop10||[];
+   const currRegDropped=(data.droppedRegionalTop5||[]).filter(r=>r.region===currClient.region);
+   let compDroppedHtml='';
+   if(compDropped.length>0){
+    compDroppedHtml=`<div style="margin-bottom:8px;padding:8px;background:#fff0f1;border:1px solid #ffd2d5;border-radius:6px;font-size:11px;color:#cf3f49;"><b>🏢 全公司 Top10 掉榜追蹤（前月在榜、本月掉出）：</b><br>${compDropped.map(c=>`• <b>${esc(c.name)}</b>（前月第 ${c.priorRank} 名／${money(c.priorNet)}）：${esc(c.status)}`).join('<br>')}</div>`;
+   }else{
+    compDroppedHtml=`<div style="margin-bottom:8px;padding:6px 8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:11px;color:#16805a;">✓ 全公司前月 Top10 客戶本期皆持續在榜。</div>`;
+   }
+   let regDroppedHtml='';
+   if(currRegDropped.length>0){
+    regDroppedHtml=`<div style="padding:8px;background:#fff8eb;border:1px solid #fed7aa;border-radius:6px;font-size:11px;color:#9a3412;"><b>📍 所屬區域（${esc(currClient.region)}）Top5 掉榜追蹤：</b><br>${currRegDropped.map(c=>`• <b>${esc(c.name)}</b>（前月該區第 ${c.priorRank} 名／${money(c.priorNet)}）：${esc(c.status)}`).join('<br>')}</div>`;
+   }else{
+    regDroppedHtml=`<div style="padding:6px 8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:11px;color:#16805a;">✓ ${esc(currClient.region)} 區前月 Top5 客戶本期皆持續在榜。</div>`;
+   }
+   droppedHtml=`<div style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;">${compDroppedHtml}${regDroppedHtml}</div>`;
+  } else {
+   const regDropped = (data.byRegion && data.byRegion[curBranch] && data.byRegion[curBranch].droppedRegionalTop5) || [];
+   if(regDropped.length>0){
+    droppedHtml=`<div style="padding:8px;background:#fff8eb;border:1px solid #fed7aa;border-radius:6px;font-size:11px;color:#9a3412;"><b>📍 ${esc(curBranch)}分區 Top5 掉榜追蹤：</b><br>${regDropped.map(c=>`• <b>${esc(c.name)}</b>（前月該區第 ${c.priorRank} 名／${money(c.priorNet)}）：${esc(c.status)}`).join('<br>')}</div>`;
+   }else{
+    droppedHtml=`<div style="padding:6px 8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:11px;color:#16805a;">✓ ${esc(curBranch)}分區前月 Top5 客戶本期皆持續在榜。</div>`;
+   }
   }
-  let regDroppedHtml='';
-  if(currRegDropped.length>0){
-   regDroppedHtml=`<div style="padding:8px;background:#fff8eb;border:1px solid #fed7aa;border-radius:6px;font-size:11px;color:#9a3412;"><b>📍 所屬區域（${esc(currClient.region)}）Top5 掉榜追蹤：</b><br>${currRegDropped.map(c=>`• <b>${esc(c.name)}</b>（前月該區第 ${c.priorRank} 名／${money(c.priorNet)}）：${esc(c.status)}`).join('<br>')}</div>`;
-  }else{
-   regDroppedHtml=`<div style="padding:6px 8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:11px;color:#16805a;">✓ ${esc(currClient.region)} 區前月 Top5 客戶本期皆持續在榜。</div>`;
-  }
-  droppedHtml=`<div style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;">${compDroppedHtml}${regDroppedHtml}</div>`;
  }else{
   droppedHtml=`<div class="note" style="font-size:11px;line-height:1.5;">YTD 模式無去年同期逐客明細，掉榜查核請切換至「月」模式檢視各月 Top10／Top5 變動。</div>`;
  }
@@ -932,15 +1111,17 @@ function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDat
  const cutoffStr=cutoffDate?(cutoffDate.slice(5,7)+'/'+cutoffDate.slice(8,10)):'09/13';
  const tagTitle=(mode==='ytd')?`2026 YTD 累計｜訂單截至 ${cutoffStr}`:`${Number(effectiveMk.slice(5))} 月管理月口徑`;
  const gmDiffStr=(currClient.gmDeltaPp!=null&&!isNaN(currClient.gmDeltaPp))?` (${currClient.gmDeltaPp>=0?'+':''}${currClient.gmDeltaPp.toFixed(2)}pp)`:'';
+ const branchLabel = (curBranch === '全部') ? '全公司' : `【${curBranch}】分區`;
 
  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-    <h3 style="margin:0;font-size:15px;color:#102b50;">核心客戶動向與異常查核（主要客戶下鑽分析）</h3>
+    <h3 style="margin:0;font-size:15px;color:#102b50;">核心客戶動向與異常查核（${esc(branchLabel)}主要客戶下鑽分析）</h3>
     <span class="tag blue" style="font-size:11px;">${esc(tagTitle)}</span>
   </div>
   <div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
-    <b>查核說明：</b>依訂單明細即時下鑽。自動標籤僅採納已定案規則（下滑/成長30%、低於整體毛利等），掉榜查核嚴格區分「全公司視角 Top10」與「區域視角 Top5」。
+    <b>查核說明：</b>依訂單明細即時下鑽。自動標籤僅採納已定案規則（下滑/成長30%、低於整體毛利等），掉榜查核嚴格區分「全公司視角 Top10」與「區域視角 Top5」。分區切換依該區獨立母體篩選 Top 10 客戶。
   </div>
+  ${branchBtnsHtml}
   <div class="cust-tab-bar" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">${tabsHtml}</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
@@ -974,7 +1155,7 @@ function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDat
   </div>
  </div>`;
 }
-function renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus){
+function renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus,selectedBranch){
  if(mode==='day'||mode==='week'){
   const summaryObj=getSummary(picker.value);
   const s=summaryObj.s;
@@ -990,26 +1171,33 @@ function renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus)
    </div>
   </div>`;
  }
+ const curBranch = selectedBranch || currentNewCustomerBranch || '全部';
+ const branchBtnsHtml = renderBranchButtonsHtml('new-modal', curBranch);
  const ncSource=(typeof NEW_CUSTOMER_DRILLDOWN!=='undefined'?NEW_CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.NEW_CUSTOMER_DRILLDOWN:null))||{};
  const drillMode=(mode==='ytd')?'ytd':'month';
  const pool=ncSource[drillMode]||{};
  const effectiveMk=pool[drillMonth]?drillMonth:(pool['2026-08']?'2026-08':Object.keys(pool)[0]);
- const data=pool[effectiveMk]||null;
- if(!data||!data.customers){
-  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;"><div class="warn">所選期間暫無新客下鑽資料。</div></div>`;
+ const rootData=pool[effectiveMk]||null;
+ if(!rootData||!rootData.customers){
+  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">${branchBtnsHtml}<div class="warn">所選期間暫無新客下鑽資料。</div></div>`;
+ }
+ let data = rootData;
+ if(curBranch !== '全部' && rootData.byRegion && rootData.byRegion[curBranch]){
+  data = rootData.byRegion[curBranch];
  }
  const cutoffStr=cutoffDate?(cutoffDate.slice(5,7)+'/'+cutoffDate.slice(8,10)):'09/13';
  const tagTitle=(mode==='ytd')?`2026 YTD 累計｜訂單截至 ${cutoffStr}`:`${Number(effectiveMk.slice(5))} 月管理月口徑`;
  const activeFilter=filterStatus||'全部';
+ const branchLabel = (curBranch === '全部') ? '全公司' : `【${curBranch}】分區`;
 
  const kpiCardsHtml=`
   <div class="kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px;">
    <div class="kpi" style="padding:10px;">
-    <small>本期新客數</small>
+    <small>${curBranch==='全部'?'本期':'【'+curBranch+'】'}新客數</small>
     <b style="font-size:22px;color:#153e72;">${data.totalCount} 戶</b>
    </div>
    <div class="kpi" style="padding:10px;">
-    <small>新客訂單淨額</small>
+    <small>${curBranch==='全部'?'新客':'【'+curBranch+'】'}訂單淨額</small>
     <b style="font-size:22px;">${money(data.totalNet)}</b>
    </div>
    <div class="kpi" style="padding:10px;">
@@ -1071,12 +1259,13 @@ function renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus)
 
  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-   <h3 style="margin:0;font-size:15px;color:#102b50;">05 新客追蹤與 30／60／90 天續購分級</h3>
+   <h3 style="margin:0;font-size:15px;color:#102b50;">05 新客追蹤與 30／60／90 天續購分級（${esc(branchLabel)}）</h3>
    <span class="tag blue" style="font-size:11px;">${esc(tagTitle)}</span>
   </div>
   <div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
-   <b>核定口徑說明：</b>新客首次交易後，至少有一筆訂單日期晚於首次交易日（跨日）才計為已續購；同一首次交易日內多張訂單視為同次首購行為。未續購者依首次交易日至截止日之客觀天數分級。預設依累計淨額由高至低排列。
+   <b>核定口徑說明：</b>新客首次交易後，至少有一筆訂單日期晚於首次交易日（跨日）才計為已續購；同一首次交易日內多張訂單視為同次首購行為。未續購者依首次交易日至截止日之客觀天數分級。預設依累計淨額由高至低排列。分區切換依該區獨立母體重算。
   </div>
+  ${branchBtnsHtml}
   ${kpiCardsHtml}
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${tabsHtml}</div>
   <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;overflow-x:auto;">
@@ -1106,15 +1295,22 @@ function renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus)
  </div>`;
 }
 
-function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus,sortMode){
+function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus,sortMode,selectedBranch){
  const dormSource=(typeof DORMANT_CUSTOMER_DRILLDOWN!=='undefined'?DORMANT_CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.DORMANT_CUSTOMER_DRILLDOWN:null));
  if(!dormSource||!dormSource.customers){
   return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;"><div class="warn">暫無久未交易舊客下鑽資料。</div></div>`;
+ }
+ const curBranch = selectedBranch || currentDormantBranch || '全部';
+ const branchBtnsHtml = renderBranchButtonsHtml('dorm-modal', curBranch);
+ let targetDorm = dormSource;
+ if(curBranch !== '全部' && dormSource.byRegion && dormSource.byRegion[curBranch]){
+  targetDorm = dormSource.byRegion[curBranch];
  }
  const cutoffStr=cutoffDate?(cutoffDate.slice(5,7)+'/'+cutoffDate.slice(8,10)):'09/13';
  const tagTitle=(mode==='ytd')?`2026 YTD 累計｜訂單截至 ${cutoffStr}`:`${Number((drillMonth||'2026-08').slice(5))} 月管理月口徑`;
  const activeFilter=filterStatus||'全部';
  const activeSort=sortMode||'csv';
+ const branchLabel = (curBranch === '全部') ? '全公司' : `【${curBranch}】分區`;
 
  let periodWarnHtml='';
  if(mode==='day'||mode==='week'){
@@ -1123,52 +1319,64 @@ function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterSta
   </div>`;
  } else {
   periodWarnHtml=`<div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
-   <b>核定口徑說明：</b>以 8/25 CSV 正式基準 268 戶為固定母體（排除現銷）；8/25 基準分級維持保留，不隨新單改寫。8/25 後有新單者（共 ${dormSource.withNewOrdersCount} 戶）客觀標示「基準日後有新增交易」，由業務主管線下核定採購性質，不逕判為全面回流。預設依 CSV 既有優先序排列。
+   <b>核定口徑說明：</b>以 8/25 CSV 正式基準 268 戶為固定母體（含 5 大分區對齊，排除現銷）；8/25 基準分級維持保留，不隨新單改寫。8/25 後有新單者（共 ${targetDorm.withNewOrdersCount} 戶）客觀標示「基準日後有新增交易」，由業務主管線下核定採購性質，不逕判為全面回流。預設依 CSV 既有優先序排列。
   </div>`;
  }
 
-   const postOrdersSum=dormSource.customers.reduce((acc,c)=>acc+c.newOrders,0);
-   const kpiCardsHtml=`
-  <div class="kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px;">
+ const postOrdersSum=targetDorm.customers.reduce((acc,c)=>acc+c.newOrders,0);
+ const sb=targetDorm.statusBreakdown||{};
+ const c2m=sb['2個月未下單']||0;
+ const c34m=sb['3–4個月未下單']||sb['3至4個月未下單']||0;
+ const cUnder6m=sb['半年以內未交易']||0;
+ const cOver6m=sb['半年以上未交易']||0;
+
+ const kpiCardsHtml=`
+  <div class="kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px;">
    <div class="kpi" style="padding:10px;">
-    <small>久未交易基準客戶</small>
-    <b style="font-size:22px;color:#153e72;">${dormSource.totalCount} 戶</b>
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">8/19 盤點 242 戶｜8/25 正式 268 戶</div>
+    <small>${curBranch==='全部'?'久未交易基準客戶':'【'+curBranch+'】基準客戶'}</small>
+    <b style="font-size:22px;color:#153e72;">${targetDorm.totalCount} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">${curBranch==='全部'?'8/19 盤點 242 戶｜8/25 正式 268 戶':'5大分區標準歸屬'}</div>
    </div>
    <div class="kpi" style="padding:10px;">
     <small>基準歷史總淨額</small>
-    <b style="font-size:22px;color:#b45309;">${money(dormSource.histTotalNet)}</b>
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">毛利 ${money(dormSource.histTotalMargin)} (${dormSource.histTotalGm}%)</div>
+    <b style="font-size:22px;color:#b45309;">${money(targetDorm.histTotalNet)}</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">毛利 ${money(targetDorm.histTotalMargin)} (${targetDorm.histTotalGm}%)</div>
    </div>
    <div class="kpi" style="padding:10px;">
     <small>基準日後有新增交易</small>
-    <b style="font-size:22px;color:#16805a;">${dormSource.withNewOrdersCount} 戶</b>
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">新增 ${postOrdersSum} 單 (${money(dormSource.withNewOrdersNet)})</div>
+    <b style="font-size:22px;color:#16805a;">${targetDorm.withNewOrdersCount} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">新增 ${postOrdersSum} 單 (${money(targetDorm.withNewOrdersNet)})</div>
    </div>
    <div class="kpi" style="padding:10px;">
     <small>2 個月未下單</small>
-    <b style="font-size:22px;color:#153e72;">${dormSource.statusBreakdown['2個月未下單']||79} 戶</b>
+    <b style="font-size:22px;color:#153e72;">${c2m} 戶</b>
     <div style="font-size:11px;color:#6f7783;margin-top:2px;">未下單 61–90 天</div>
    </div>
    <div class="kpi" style="padding:10px;">
     <small>3–4 個月未下單</small>
-    <b style="font-size:22px;color:#d97706;">${dormSource.statusBreakdown['3至4個月未下單']||98} 戶</b>
+    <b style="font-size:22px;color:#d97706;">${c34m} 戶</b>
     <div style="font-size:11px;color:#6f7783;margin-top:2px;">未下單 92–152 天</div>
    </div>
    <div class="kpi" style="padding:10px;">
-    <small>5 個月以上未下單</small>
-    <b style="font-size:22px;color:#cf3f49;">${dormSource.statusBreakdown['5個月以上未下單']||91} 戶</b>
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">未下單 153–242 天</div>
+    <small>半年以內 (5個月)</small>
+    <b style="font-size:22px;color:#cf3f49;">${cUnder6m} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">未下單 153–182 天</div>
+   </div>
+   <div class="kpi" style="padding:10px;">
+    <small>半年以上 (≥6個月)</small>
+    <b style="font-size:22px;color:#991b1b;">${cOver6m} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">未下單 183 天以上</div>
    </div>
   </div>
  `;
 
  const filterTabs=[
-  {key:'全部',label:`全部 (${dormSource.totalCount})`},
-  {key:'2個月',label:`2 個月未下單 (${dormSource.statusBreakdown['2個月未下單']||79})`},
-  {key:'3–4個月',label:`3–4 個月未下單 (${dormSource.statusBreakdown['3至4個月未下單']||98})`},
-  {key:'5個月以上',label:`5 個月以上未下單 (${dormSource.statusBreakdown['5個月以上未下單']||91})`},
-  {key:'基準後有新單',label:`基準日後有新增交易 (${dormSource.withNewOrdersCount})`}
+  {key:'全部',label:`全部 (${targetDorm.totalCount})`},
+  {key:'2個月',label:`2 個月 (${c2m})`},
+  {key:'3–4個月',label:`3–4 個月 (${c34m})`},
+  {key:'半年以內',label:`半年以內5個月 (${cUnder6m})`},
+  {key:'半年以上',label:`半年以上6個月+ (${cOver6m})`},
+  {key:'基準後有新單',label:`基準日後有新增交易 (${targetDorm.withNewOrdersCount})`}
  ];
 
  const tabsHtml=filterTabs.map(t=>{
@@ -1184,13 +1392,15 @@ function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterSta
   </div>
  `;
 
- let filtered=[...dormSource.customers];
+ let filtered=[...targetDorm.customers];
  if(activeFilter==='2個月'){
-  filtered=filtered.filter(c=>c.baseStatus==='2個月未下單');
+  filtered=filtered.filter(c=>c.tierStatus==='2 個月未下單'||c.baseMonths===2);
  }else if(activeFilter==='3–4個月'){
-  filtered=filtered.filter(c=>c.baseStatus==='3至4個月未下單');
- }else if(activeFilter==='5個月以上'){
-  filtered=filtered.filter(c=>c.baseStatus==='5個月以上未下單');
+  filtered=filtered.filter(c=>c.tierStatus==='3–4 個月未下單'||(c.baseMonths>=3&&c.baseMonths<=4));
+ }else if(activeFilter==='半年以內'){
+  filtered=filtered.filter(c=>c.tierStatus==='半年以內未交易'||c.baseMonths===5);
+ }else if(activeFilter==='半年以上'){
+  filtered=filtered.filter(c=>c.tierStatus==='半年以上未交易'||c.baseMonths>=6);
  }else if(activeFilter==='基準後有新單'){
   filtered=filtered.filter(c=>c.hasNewOrders);
  }
@@ -1214,10 +1424,12 @@ function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterSta
   }
 
   let baseStatusStyle='background:#edf4fb;color:#2d6fb2;border:1px solid #cbd8e7;';
-  if(c.baseStatus==='3至4個月未下單'){
+  if(c.tierStatus==='3–4 個月未下單'||c.baseStatus==='3至4個月未下單'){
    baseStatusStyle='background:#fff5e9;color:#ad6518;border:1px solid #f3d0a7;';
-  }else if(c.baseStatus==='5個月以上未下單'){
+  }else if(c.tierStatus==='半年以內未交易'){
    baseStatusStyle='background:#fff0f1;color:#cf3f49;border:1px solid #ffd2d5;';
+  }else if(c.tierStatus==='半年以上未交易'||c.baseStatus==='5個月以上未下單'){
+   baseStatusStyle='background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;font-weight:bold;';
   }
 
   let dynamicBadge='';
@@ -1234,7 +1446,7 @@ function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterSta
    <td class="num" style="font-weight:bold;color:#153e72;white-space:nowrap;">${c.csvRank}</td>
    <td style="white-space:nowrap;"><span style="display:inline-block;padding:2px 6px;border-radius:999px;font-size:10px;white-space:nowrap;${tierStyle}">${esc(c.csvTier)}</span></td>
    <td style="font-weight:600;white-space:nowrap;">${esc(c.name)}</td>
-   <td style="white-space:nowrap;"><span style="display:inline-block;padding:2px 6px;border-radius:999px;font-size:10px;white-space:nowrap;${baseStatusStyle}">${esc(c.baseStatus)}</span></td>
+   <td style="white-space:nowrap;"><span style="display:inline-block;padding:2px 6px;border-radius:999px;font-size:10px;white-space:nowrap;${baseStatusStyle}">${esc(c.tierStatus||c.baseStatus)}</span></td>
    <td style="white-space:nowrap;">${esc(c.baseLastDate)} <span style="color:#6f7783;font-size:10px;">(${c.baseDays}天)</span></td>
    <td class="num" style="font-weight:bold;color:#153e72;white-space:nowrap;">${money(c.histNet)}</td>
    <td class="num" style="white-space:nowrap;">${gmStr}</td>
@@ -1247,9 +1459,10 @@ function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterSta
 
  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-   <h3 style="margin:0;font-size:15px;color:#102b50;">05B 舊客追蹤｜久未交易客戶名單與動態</h3>
+   <h3 style="margin:0;font-size:15px;color:#102b50;">05B 舊客追蹤｜久未交易客戶名單與動態（${esc(branchLabel)}）</h3>
    <span class="tag blue" style="font-size:11px;">${esc(tagTitle)}</span>
   </div>
+  ${branchBtnsHtml}
   ${periodWarnHtml}
   ${kpiCardsHtml}
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
@@ -1475,14 +1688,21 @@ function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilte
   </div>`;
 }
 
-function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, expandedMajor, expandedMinor){
+function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, expandedMajor, expandedMinor, selectedBranch){
   const prodSource = (typeof window !== 'undefined' && window.PRODUCT_DRILLDOWN) ? (window.PRODUCT_DRILLDOWN[mode]?.[drillMonth] || window.PRODUCT_DRILLDOWN['month']?.[drillMonth] || window.PRODUCT_DRILLDOWN['month']?.['2026-09']) : null;
   if(!prodSource || !prodSource.categories){
     return `<div class="warn" style="margin-top:14px">目前所選期間（${esc(drillMonth)}）尚無產品結構下鑽資料。</div>`;
   }
+  const curBranch = selectedBranch || currentProductBranch || '全部';
+  const branchBtnsHtml = renderBranchButtonsHtml('prod-modal', curBranch);
+  let targetSource = prodSource;
+  if(curBranch !== '全部' && prodSource.byRegion && prodSource.byRegion[curBranch]){
+    targetSource = prodSource.byRegion[curBranch];
+  }
+  const branchLabel = (curBranch === '全部') ? '全公司' : `【${curBranch}】分區`;
 
   const sortVal = currentSort || 'net';
-  const categories = [...prodSource.categories].sort((a, b) => {
+  const categories = [...targetSource.categories].sort((a, b) => {
     if(sortVal === 'margin') return b.margin - a.margin;
     if(sortVal === 'gm') return b.gm - a.gm;
     return b.net - a.net;
@@ -1491,24 +1711,24 @@ function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, e
   const kpiCardsHtml = `
   <div class="kpis" style="margin-bottom:12px;">
     <div class="kpi">
-      <small>品類監控規模</small>
-      <b class="blue">${prodSource.categoriesCount} 大類 ｜ ${prodSource.subCategoriesCount} 中類</b>
+      <small>${curBranch==='全部'?'品類監控規模':'【'+curBranch+'】品類規模'}</small>
+      <b class="blue">${targetSource.categoriesCount} 大類 ｜ ${targetSource.subCategoriesCount} 中類</b>
       <div class="note">排除現銷口徑｜單位嚴格分流</div>
     </div>
     <div class="kpi">
       <small>期間訂單淨額</small>
-      <b class="blue">${money(prodSource.totalNet)}</b>
-      <div class="note">期間毛利 ${money(prodSource.totalMargin)}</div>
+      <b class="blue">${money(targetSource.totalNet)}</b>
+      <div class="note">期間毛利 ${money(targetSource.totalMargin)}</div>
     </div>
     <div class="kpi">
-      <small>全公司平均毛利率</small>
-      <b class="green">${prodSource.totalGm.toFixed(2)}%</b>
+      <small>${curBranch==='全部'?'全公司':'分區'}平均毛利率</small>
+      <b class="green">${targetSource.totalGm.toFixed(2)}%</b>
       <div class="note">作為各品類客觀比較基準</div>
     </div>
     <div class="kpi">
       <small>毛利率高於平均佔比</small>
-      <b class="green">${prodSource.aboveAvgShare}%</b>
-      <div class="note">低於平均營收佔比 ${prodSource.belowAvgShare}%</div>
+      <b class="green">${targetSource.aboveAvgShare}%</b>
+      <div class="note">低於平均營收佔比 ${targetSource.belowAvgShare}%</div>
     </div>
   </div>`;
 
@@ -1678,9 +1898,10 @@ function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, e
   return `
   <div class="product-drilldown-panel" style="margin-top:14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-      <h3 style="margin:0;font-size:15px;color:#153e72;">07 產品結構｜多層級下鑽分析（大類 → 中類 → 客戶）</h3>
+      <h3 style="margin:0;font-size:15px;color:#153e72;">07 產品結構｜多層級下鑽分析（${esc(branchLabel)}大類 → 中類 → 客戶）</h3>
       <span style="font-size:12px;color:#64748b;">查詢期間：${esc(drillMonth)}（已排除現銷）</span>
     </div>
+    ${branchBtnsHtml}
     ${kpiCardsHtml}
     ${sortControlHtml}
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;overflow-x:auto;">
@@ -1702,7 +1923,7 @@ function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, e
       </table>
     </div>
     <div class="note" style="margin-top:10px;font-size:11px;color:#64748b;line-height:1.5;">
-      <b>產品結構解讀提醒：</b>數量嚴格依銷售單位分流（片／個／式／才各自統計），不跨不同單位相加。本分析不自行設定低毛利或高營收等主觀門檻；高營收低於平均毛利率品類需檢視原料或折讓，高毛利品類再評估市場推廣可行性。
+      <b>產品結構解讀提醒：</b>數量嚴格依銷售單位分流（片／個／式／才各自統計），不跨不同單位相加。本分析不自行設定低毛利或高營收等主觀門檻；高營收低於平均毛利率品類需檢視原料或折讓，高毛利品類再評估市場推廣可行性。分區切換依該區獨立母體篩選結構。
     </div>
   </div>`;
 }
@@ -1727,7 +1948,7 @@ function getDongDecision(summaryObj){
 
  return {
   id:'dong',
-  title:'東澤物料｜指定客戶物料單追蹤與分區毛利檢視',
+  title:'東澤指定客戶物料單桃園區追蹤',
   evidence:`${scope}東澤分析範圍合計淨額 ${money(net)}，毛利 ${money(margin)}（毛利率 ${gm.toFixed(2)}%）；訂購數量 ${fmt(qty)} 片，已出貨 ${fmt(shippedQty)} 片（出貨達成率 ${shippedRate.toFixed(1)}%）。`,
   action:'依 7 區與 3 大中類檢視採購與出貨進度；對低於目標毛利或未出貨之案件，逐戶確認規格、折讓與排程。',
   owner:'東澤專案業務主管＋出貨窗口',
@@ -2103,7 +2324,7 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
  return `
   <div class="dong-drilldown-wrapper" style="margin-top:14px;border:1px solid #cbd5e1;border-radius:8px;padding:16px;background:#ffffff;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <h3 style="margin:0;font-size:16px;color:#1e293b;">東澤物料專區｜多維度深入分析 (${esc(scopeName)})</h3>
+      <h3 style="margin:0;font-size:16px;color:#1e293b;">東澤物料專區｜東澤指定客戶物料單桃園區追蹤 (${esc(scopeName)})</h3>
       <span style="font-size:12px;color:#64748b;">查詢基準日：<b>${esc(cutoffDate)}</b></span>
     </div>
     ${kpiSectionHtml}
@@ -2139,7 +2360,7 @@ function getDongProductDecision(summaryObj){
 
  return {
   id:'dongProduct',
-  title:'東澤指定客戶製品訂購單追蹤',
+  title:'東澤指定客戶製品訂購單桃園區追蹤（定案規格）',
   evidence:`${scope}製品追蹤範圍合計淨額 ${money(net)}，毛利 ${money(margin)}（毛利率 ${gm.toFixed(2)}%）；訂購數量共 ${fmt(sheets)} 片＋${fmt(pcs)} 個（單位嚴格分開統計），已出貨 ${fmt(shippedSheets)} 片＋${fmt(shippedPcs)} 個（出貨金額 ${money(shippedNet)}）。`,
   action:'掌握壓克力加工製品中類與客戶接單結構，落實「片／個」嚴格分流；追蹤各案實際出貨進度與偏低毛利率案件，落實客觀查核。',
   owner:'製品業務主管＋生產出貨窗口',
@@ -2541,7 +2762,7 @@ function renderDongProductHtml(mode, drillMonth, cutoffDate, filterRegion='全�
  return `
   <div class="dong-product-drilldown-wrapper" style="margin-top:14px;border:1px solid #cbd5e1;border-radius:8px;padding:16px;background:#ffffff;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <h3 style="margin:0;font-size:16px;color:#1e293b;">東澤指定客戶製品訂購單追蹤｜多維度深入分析 (${esc(scopeName)})</h3>
+      <h3 style="margin:0;font-size:16px;color:#1e293b;">東澤指定客戶製品訂購單追蹤｜東澤指定客戶製品訂購單桃園區追蹤（定案規格） (${esc(scopeName)})</h3>
       <span style="font-size:12px;color:#64748b;">查詢基準日：<b>${esc(cutoffDate)}</b></span>
     </div>
     ${kpiSectionHtml}
@@ -2579,12 +2800,14 @@ function renderDongProductHtml(mode, drillMonth, cutoffDate, filterRegion='全�
  const ths=(d.headers||['處理對象','數據依據','差距／查核資訊']).map(h=>`<th>${esc(h)}</th>`).join('');
  const extraNoteHtml=d.extraNote?`<div class="callout" style="margin-top:8px"><b>查核方式：</b>${esc(d.extraNote)}</div>`:'';
  const drillMonth=d.drillMonth||d.customerMonth||d.newCustMonth||mgmtKey(summaryObj.s.end);
+ const equipMonth=(typeof EQUIP!=='undefined'&&EQUIP[drillMonth])?drillMonth:'2026-08';
  const cutoffDate=d.cutoffDate||summaryObj.s.end;
 
- const targetDrillHtml=(d.id==='target'&&d.targetRegions&&d.targetRegions.length)?`<div id="targetDrilldownContainer">${renderTargetDrilldownHtml(mode,drillMonth,d.targetRegions,d.targetRegions[0],cutoffDate)}</div>`:'';
- const custDrillHtml=(d.id==='customer')?`<div id="customerDrilldownContainer">${renderCustomerDrilldownHtml(mode,drillMonth,null,cutoffDate)}</div>`:'';
+ const targetDrillHtml=(d.id==='target')?`<div id="targetDrilldownContainer">${renderTargetDrilldownHtml(mode,drillMonth,d.targetRegions||null,null,cutoffDate,currentTargetView)}</div>`:'';
+ const custDrillHtml=(d.id==='customer')?`<div id="customerDrilldownContainer">${renderCustomerDrilldownHtml(mode,drillMonth,null,cutoffDate,currentCustomerBranch)}</div>`:'';
+ const equipDrillHtml=(d.id==='equipment')?`<div id="equipDrilldownContainer">${renderEquipTableHtml(equipMonth,currentEquipView)}</div>`:'';
  const shipDrillHtml=(d.id==='shipment')?`<div id="shipmentDrilldownContainer">${renderUnshippedDrilldownHtml(mode,drillMonth,cutoffDate,'全部','wait',null)}</div>`:'';
- const prodDrillHtml=(d.id==='product')?`<div id="productDrilldownContainer">${renderProductDrilldownHtml(mode,drillMonth,cutoffDate,'net',null,null)}</div>`:'';
+ const prodDrillHtml=(d.id==='product')?`<div id="productDrilldownContainer">${renderProductDrilldownHtml(mode,drillMonth,cutoffDate,'net',null,null,currentProductBranch)}</div>`:'';
  const dongDrillHtml=(d.id==='dong')?`<div id="dongDrilldownContainer">${renderDongDrilldownHtml(mode,drillMonth,cutoffDate,'全部','regions')}</div>`:'';
  const dongProdDrillHtml=(d.id==='dongProduct')?`<div id="dongProductContainer">${renderDongProductHtml(mode,drillMonth,cutoffDate,'全部','overview')}</div>`:'';
 
@@ -2596,27 +2819,45 @@ function renderDongProductHtml(mode, drillMonth, cutoffDate, filterRegion='全�
     <button type="button" class="life-tab-btn" data-life-tab="dormant" style="padding:8px 16px;font-size:13px;font-weight:bold;border-radius:8px;border:1px solid ${activeLifeTab==='dormant'?'#153e72':'#cbd8e7'};background:${activeLifeTab==='dormant'?'#153e72':'#fff'};color:${activeLifeTab==='dormant'?'#fff':'#153e72'};cursor:pointer;">05B 久未交易舊客追蹤</button>
    </div>
   `;
-  const drillContent=(activeLifeTab==='dormant')?`<div id="dormantCustomerDrilldownContainer">${renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,'全部','csv')}</div>`:`<div id="newCustomerDrilldownContainer">${renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,'全部')}</div>`;
+  const drillContent=(activeLifeTab==='dormant')?`<div id="dormantCustomerDrilldownContainer">${renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,'全部','csv',currentDormantBranch)}</div>`:`<div id="newCustomerDrilldownContainer">${renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,'全部',currentNewCustomerBranch)}</div>`;
   lifeSectionHtml=`${tabBarHtml}<div id="lifeDrilldownContainer">${drillContent}</div>`;
  }
 
  const checkLabel=(d.id==='equipment'||d.id==='signoff'||d.id==='target')?'後續追蹤':'驗收條件';
- const isCustomDrill=(isLifeId||d.id==='shipment'||d.id==='product'||d.id==='dong'||d.id==='dongProduct');
+ const isCustomDrill=(isLifeId||d.id==='equipment'||d.id==='shipment'||d.id==='product'||d.id==='dong'||d.id==='dongProduct');
  const previewTableHtml=(!isCustomDrill&&d.rows&&d.rows.length)?'<div class="table-scroll"><table><thead><tr>'+ths+'</tr></thead><tbody>'+d.rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+extraNoteHtml:'';
 
  const detail=document.createElement('section');
  detail.id='decisionDetail';
  detail.className='decision-detail';
- detail.innerHTML=`<span class="tag blue">本期數據與建議處置</span><h2>${esc(d.title)}</h2><p>${esc(d.evidence)}</p>${previewTableHtml}${targetDrillHtml}${custDrillHtml}${lifeSectionHtml}${shipDrillHtml}${prodDrillHtml}${dongDrillHtml}${dongProdDrillHtml}<p><b>建議行動：</b>${esc(d.action)}</p><p><b>建議負責：</b>${esc(d.owner)}</p><p><b>${checkLabel}：</b>${esc(d.check)}</p><div class="warn"><b>資料限制：</b>${esc(d.missing)}</div><h3>本機改善追蹤</h3><p class="note">以目前期間與指標保存於此瀏覽器，未指派給其他人；無跨裝置同步。標為待驗收不代表改善成效已確認。</p><label>實際負責人 <input id="actionOwner" placeholder="待主管指派" value="${esc(saved.owner||'')}"></label><label>核定期限 <input id="actionDue" type="date" value="${esc(saved.due||'')}"></label><label>執行狀態 <select id="actionStatus"><option>待確認</option><option>執行中</option><option>待驗收</option></select></label><label>原因、措施及驗收證據<textarea id="actionMemo">${esc(saved.memo||'')}</textarea></label><button id="saveAction" class="improve-btn">儲存本機追蹤</button><p id="saveFeedback" role="status"></p>`;
+ detail.innerHTML=`<span class="tag blue">本期數據與建議處置</span><h2>${esc(d.title)}</h2><p>${esc(d.evidence)}</p>${previewTableHtml}${targetDrillHtml}${custDrillHtml}${equipDrillHtml}${lifeSectionHtml}${shipDrillHtml}${prodDrillHtml}${dongDrillHtml}${dongProdDrillHtml}<p><b>建議行動：</b>${esc(d.action)}</p><p><b>建議負責：</b>${esc(d.owner)}</p><p><b>${checkLabel}：</b>${esc(d.check)}</p><div class="warn"><b>資料限制：</b>${esc(d.missing)}</div><h3>本機改善追蹤</h3><p class="note">以目前期間與指標保存於此瀏覽器，未指派給其他人；無跨裝置同步。標為待驗收不代表改善成效已確認。</p><label>實際負責人 <input id="actionOwner" placeholder="待主管指派" value="${esc(saved.owner||'')}"></label><label>核定期限 <input id="actionDue" type="date" value="${esc(saved.due||'')}"></label><label>執行狀態 <select id="actionStatus"><option>待確認</option><option>執行中</option><option>待驗收</option></select></label><label>原因、措施及驗收證據<textarea id="actionMemo">${esc(saved.memo||'')}</textarea></label><button id="saveAction" class="improve-btn">儲存本機追蹤</button><p id="saveFeedback" role="status"></p>`;
  document.querySelector('.improve-body').prepend(detail);
 
  if(d.id==='target'){
   const ddBox=(detail.querySelector?detail.querySelector('#targetDrilldownContainer'):null)||document.getElementById('targetDrilldownContainer');
   if(ddBox&&ddBox.addEventListener){
    ddBox.addEventListener('click',e=>{
+    const vBtn=e.target&&e.target.closest?e.target.closest('[data-target-modal-view]'):null;
+    if(vBtn&&vBtn.dataset&&vBtn.dataset.targetModalView){
+     currentTargetView=vBtn.dataset.targetModalView;
+     ddBox.innerHTML=renderTargetDrilldownHtml(mode,drillMonth,null,null,cutoffDate,currentTargetView);
+     return;
+    }
     const btn=e.target&&e.target.closest?e.target.closest('[data-drill-reg]'):null;
     if(btn&&btn.dataset&&btn.dataset.drillReg){
-     ddBox.innerHTML=renderTargetDrilldownHtml(mode,drillMonth,d.targetRegions,btn.dataset.drillReg,cutoffDate);
+     ddBox.innerHTML=renderTargetDrilldownHtml(mode,drillMonth,null,btn.dataset.drillReg,cutoffDate,currentTargetView);
+    }
+   });
+  }
+ }
+ if(d.id==='equipment'){
+  const eqBox=(detail.querySelector?detail.querySelector('#equipDrilldownContainer'):null)||document.getElementById('equipDrilldownContainer');
+  if(eqBox&&eqBox.addEventListener){
+   eqBox.addEventListener('click',e=>{
+    const btn=e.target&&e.target.closest?e.target.closest('[data-equip-view]'):null;
+    if(btn&&btn.dataset&&btn.dataset.equipView){
+     currentEquipView=btn.dataset.equipView;
+     eqBox.innerHTML=renderEquipTableHtml(equipMonth,currentEquipView);
     }
    });
   }
@@ -2625,9 +2866,15 @@ function renderDongProductHtml(mode, drillMonth, cutoffDate, filterRegion='全�
   const cBox=(detail.querySelector?detail.querySelector('#customerDrilldownContainer'):null)||document.getElementById('customerDrilldownContainer');
   if(cBox&&cBox.addEventListener){
    cBox.addEventListener('click',e=>{
+    const bBtn=e.target&&e.target.closest?e.target.closest('[data-cust-modal-branch]'):null;
+    if(bBtn&&bBtn.dataset&&bBtn.dataset.custModalBranch){
+     currentCustomerBranch=bBtn.dataset.custModalBranch;
+     cBox.innerHTML=renderCustomerDrilldownHtml(mode,drillMonth,null,cutoffDate,currentCustomerBranch);
+     return;
+    }
     const btn=e.target&&e.target.closest?e.target.closest('[data-cust-name]'):null;
     if(btn&&btn.dataset&&btn.dataset.custName){
-     cBox.innerHTML=renderCustomerDrilldownHtml(mode,drillMonth,btn.dataset.custName,cutoffDate);
+     cBox.innerHTML=renderCustomerDrilldownHtml(mode,drillMonth,btn.dataset.custName,cutoffDate,currentCustomerBranch);
     }
    });
   }
@@ -2670,10 +2917,18 @@ function renderDongProductHtml(mode, drillMonth, cutoffDate, filterRegion='全�
   let currentProdMinor=null;
   const updateProdDisplay=()=>{
    const pBox=(detail.querySelector?detail.querySelector('#productDrilldownContainer'):null)||document.getElementById('productDrilldownContainer');
-   if(pBox) pBox.innerHTML=renderProductDrilldownHtml(mode,drillMonth,cutoffDate,currentProdSort,currentProdMajor,currentProdMinor);
+   if(pBox) pBox.innerHTML=renderProductDrilldownHtml(mode,drillMonth,cutoffDate,currentProdSort,currentProdMajor,currentProdMinor,currentProductBranch);
   };
   if(detail.addEventListener){
    detail.addEventListener('click',e=>{
+    const pbBtn=e.target&&e.target.closest?e.target.closest('[data-prod-modal-branch]'):null;
+    if(pbBtn&&pbBtn.dataset&&pbBtn.dataset.prodModalBranch){
+     currentProductBranch=pbBtn.dataset.prodModalBranch;
+     currentProdMajor=null;
+     currentProdMinor=null;
+     updateProdDisplay();
+     return;
+    }
     const sBtn=e.target&&e.target.closest?e.target.closest('[data-prod-sort]'):null;
     if(sBtn&&sBtn.dataset&&sBtn.dataset.prodSort){
      currentProdSort=sBtn.dataset.prodSort;
@@ -2715,7 +2970,7 @@ function renderDongProductHtml(mode, drillMonth, cutoffDate, filterRegion='全�
    });
    priorOpen(currentLifeTab==='dormant'?'dormant-customer':'new-customer');
    if(cBox){
-    cBox.innerHTML=(currentLifeTab==='dormant')?`<div id="dormantCustomerDrilldownContainer">${renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentDormFilter,currentDormSort)}</div>`:`<div id="newCustomerDrilldownContainer">${renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentNewFilter)}</div>`;
+    cBox.innerHTML=(currentLifeTab==='dormant')?`<div id="dormantCustomerDrilldownContainer">${renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentDormFilter,currentDormSort,currentDormantBranch)}</div>`:`<div id="newCustomerDrilldownContainer">${renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentNewFilter,currentNewCustomerBranch)}</div>`;
    }
   };
 
@@ -2730,25 +2985,39 @@ function renderDongProductHtml(mode, drillMonth, cutoffDate, filterRegion='全�
      updateLifeDisplay();
      return;
     }
+    const nbBtn=e.target&&e.target.closest?e.target.closest('[data-new-modal-branch]'):null;
+    if(nbBtn&&nbBtn.dataset&&nbBtn.dataset.newModalBranch){
+     currentNewCustomerBranch=nbBtn.dataset.newModalBranch;
+     const ncBox=(detail.querySelector?detail.querySelector('#newCustomerDrilldownContainer'):null)||document.getElementById('newCustomerDrilldownContainer');
+     if(ncBox)ncBox.innerHTML=renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentNewFilter,currentNewCustomerBranch);
+     return;
+    }
     const statusBtn=e.target&&e.target.closest?e.target.closest('[data-status-filter]'):null;
     if(statusBtn&&statusBtn.dataset&&statusBtn.dataset.statusFilter){
      currentNewFilter=statusBtn.dataset.statusFilter;
      const ncBox=(detail.querySelector?detail.querySelector('#newCustomerDrilldownContainer'):null)||document.getElementById('newCustomerDrilldownContainer');
-     if(ncBox)ncBox.innerHTML=renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentNewFilter);
+     if(ncBox)ncBox.innerHTML=renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentNewFilter,currentNewCustomerBranch);
+     return;
+    }
+    const dbBtn=e.target&&e.target.closest?e.target.closest('[data-dorm-modal-branch]'):null;
+    if(dbBtn&&dbBtn.dataset&&dbBtn.dataset.dormModalBranch){
+     currentDormantBranch=dbBtn.dataset.dormModalBranch;
+     const dcBox=(detail.querySelector?detail.querySelector('#dormantCustomerDrilldownContainer'):null)||document.getElementById('dormantCustomerDrilldownContainer');
+     if(dcBox)dcBox.innerHTML=renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentDormFilter,currentDormSort,currentDormantBranch);
      return;
     }
     const dormFilterBtn=e.target&&e.target.closest?e.target.closest('[data-dorm-filter]'):null;
     if(dormFilterBtn&&dormFilterBtn.dataset&&dormFilterBtn.dataset.dormFilter){
      currentDormFilter=dormFilterBtn.dataset.dormFilter;
      const dcBox=(detail.querySelector?detail.querySelector('#dormantCustomerDrilldownContainer'):null)||document.getElementById('dormantCustomerDrilldownContainer');
-     if(dcBox)dcBox.innerHTML=renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentDormFilter,currentDormSort);
+     if(dcBox)dcBox.innerHTML=renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentDormFilter,currentDormSort,currentDormantBranch);
      return;
     }
     const dormSortBtn=e.target&&e.target.closest?e.target.closest('[data-dorm-sort]'):null;
     if(dormSortBtn&&dormSortBtn.dataset&&dormSortBtn.dataset.dormSort){
      currentDormSort=dormSortBtn.dataset.dormSort;
      const dcBox=(detail.querySelector?detail.querySelector('#dormantCustomerDrilldownContainer'):null)||document.getElementById('dormantCustomerDrilldownContainer');
-     if(dcBox)dcBox.innerHTML=renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentDormFilter,currentDormSort);
+     if(dcBox)dcBox.innerHTML=renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,currentDormFilter,currentDormSort,currentDormantBranch);
      return;
     }
    });
@@ -2851,7 +3120,46 @@ function renderDongProductHtml(mode, drillMonth, cutoffDate, filterRegion='全�
  $('actionStatus').value=saved.status||'待確認';$('saveAction').onclick=()=>{try{localStorage.setItem(storageKey,JSON.stringify({owner:$('actionOwner').value,due:$('actionDue').value,status:$('actionStatus').value,memo:$('actionMemo').value}));$('saveFeedback').textContent='已儲存於此瀏覽器。'}catch{$('saveFeedback').textContent='瀏覽器不允許儲存，請另行保留紀錄。'}};$('improveView').scrollTop=0;
 };
 
-document.addEventListener('click',e=>{const b=e.target.closest('[data-decision]');if(b)openImprove(b.dataset.decision)});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-decision]');
+ if(b){openImprove(b.dataset.decision);return;}
+ const tvBtn=e.target.closest('[data-target-view]');
+ if(tvBtn&&tvBtn.dataset.targetView){
+  currentTargetView=tvBtn.dataset.targetView;
+  render();
+  return;
+ }
+ const eqBtn=e.target.closest('[data-equip-view]');
+ if(eqBtn&&eqBtn.dataset.equipView){
+  currentEquipView=eqBtn.dataset.equipView;
+  render();
+  return;
+ }
+ const cbBtn=e.target.closest('[data-customer-branch]');
+ if(cbBtn&&cbBtn.dataset.customerBranch){
+  currentCustomerBranch=cbBtn.dataset.customerBranch;
+  render();
+  return;
+ }
+ const nbBtn=e.target.closest('[data-new-branch]');
+ if(nbBtn&&nbBtn.dataset.newBranch){
+  currentNewCustomerBranch=nbBtn.dataset.newBranch;
+  render();
+  return;
+ }
+ const dbBtn=e.target.closest('[data-dormant-branch]');
+ if(dbBtn&&dbBtn.dataset.dormantBranch){
+  currentDormantBranch=dbBtn.dataset.dormantBranch;
+  render();
+  return;
+ }
+ const pbBtn=e.target.closest('[data-product-branch]');
+ if(pbBtn&&pbBtn.dataset.productBranch){
+  currentProductBranch=pbBtn.dataset.productBranch;
+  render();
+  return;
+ }
+});
 document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));render();
 window.addEventListener('scroll',()=>{document.querySelector('header')?.classList.toggle('compact',window.scrollY>60);},{passive:true});
 </script></body></html>

@@ -2,7 +2,7 @@
 
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
-<title>巧展｜董事長營運洞察</title>
+<title>巧展｜董事長營運洞察（10/29 出貨基準試算版）</title>
 
 <script src="dashboard_data.js"></script>
 
@@ -139,6 +139,10 @@ main{padding:14px 12px 40px}.block{background:#fff;border:1px solid var(--line);
   <span id="monthCompareNote" style="color:#64748b;font-size:11px;"></span>
 
 </div><div class="data-note" id="dataNote"></div><div class="data-note" id="sourceStatusBar" style="display:flex;gap:14px;flex-wrap:wrap;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;font-size:12px;"><span>📦 <b>訂單資料：</b>涵蓋至 <b id="statOrdersCoverage">2026/10/25</b>（最後訂單 <b id="statOrdersLastTrade">2026/10/23</b>）</span><span>✍️ <b>每日簽核：</b>最新記錄至 <b id="statSignDate">2026/10/24</b></span><span>📑 <b>正式營業實績：</b>更新至 <b id="statActualDate">9 月</b>（正式月報）</span><span>⚙️ <b>設備實際產量：</b>更新至 <b id="statEquipDate">9 月</b>（正式月報）</span></div><div class="nav"><a href="#summary">本期先看</a><a href="#indicatorMap">七指標</a><a href="#overview">摘要</a><a href="#machine">設備</a><a href="#signoff">簽核</a><a href="#target">目標</a><a href="#customer">核心客戶</a><a href="#new">新客</a><a href="#dormant">舊客</a><a href="#shipment">未出貨</a><a href="#product">產品</a><a href="#dong">東澤</a></div></div></header>
+<div id="shipmentNoticeBanner" style="background:#e0f2fe;border-bottom:1px solid #bae6fd;padding:8px 18px;font-size:12px;color:#0369a1;display:flex;align-items:center;justify-content:space-between;">
+  <span>📦 <b>10/29 完整出貨口徑試算版：</b>依 10/30 與副理確認規則重構，全指標採「實際出貨日期」歸屬、出貨營收與出貨毛利計算，完工未出貨採整張訂單全品項彙整。</span>
+  <span style="font-weight:bold;color:#0284c7;background:#fff;padding:2px 8px;border-radius:12px;border:1px solid #7dd3fc;">獨立驗證版</span>
+</div>
 
 <main class="wrap">
 
@@ -1186,6 +1190,18 @@ function getMergedDongData(combData, selectedBranches) {
 
       ...combData,
 
+      placedQty: combData.placedQty ?? combData.totalSheets ?? 0,
+
+      shippedQty: combData.shippedQty ?? (combData.shippedUnits ? combData.shippedUnits['片'] : 0),
+
+      shippedOrders: combData.shippedOrders,
+
+      shippedCustomers: combData.shippedCustomers,
+
+      placedOrders: combData.orderCount,
+
+      placedCustomers: combData.customerCount,
+
       scopeNote: '五大區合計'
 
     };
@@ -1278,6 +1294,8 @@ function getMergedDongData(combData, selectedBranches) {
 
     totalSheets,
 
+    placedQty: totalSheets,
+
     totalPcs: 0,
 
     units: { '片': totalSheets },
@@ -1290,7 +1308,13 @@ function getMergedDongData(combData, selectedBranches) {
 
     shippedUnits: { '片': shippedSheets },
 
+    shippedQty: shippedSheets,
+
     shippedNet,
+
+    shippedOrders: orderCount,
+
+    shippedCustomers: filteredClients.length,
 
     materialSummary: {
 
@@ -1525,685 +1549,407 @@ function renderBranchButtonsHtml(category, currentBranch) {
 
 
 // 1. 客戶營收與毛利合併計算函式
-
 function getMergedCustomerData(cData, selectedBranches, mode) {
-
   if (!cData) return null;
-
   const branches = (selectedBranches && selectedBranches.length) ? selectedBranches : FIVE_BRANCH_LIST;
+  const is5 = (branches.length === 5);
+  const regionSource = cData.byRegion || cData.branchClients || {};
 
-  
-
-  if (branches.length === 5 && cData.topClients) {
-
+  // 五大區合計且已有預算好的 topClients
+  if (is5 && cData.topClients && cData.topClients.length) {
     return {
-
       totalNet: cData.totalNet,
-
       totalMargin: cData.totalMargin,
-
       companyGm: cData.companyGm,
-
       topClients: cData.topClients.slice(0, 10),
-
       droppedCompanyTop10: cData.droppedCompanyTop10 || [],
-
       scopeNote: '五大區合計'
-
     };
-
   }
 
-
-
-  if (branches.length === 1 && cData.byRegion && cData.byRegion[branches[0]]) {
-
-    const rd = cData.byRegion[branches[0]];
-
+  // 單一分區
+  if (branches.length === 1) {
+    const b = branches[0];
+    const rd = regionSource[b];
+    if (!rd) {
+      return {
+        totalNet: 0,
+        totalMargin: 0,
+        companyGm: 0,
+        topClients: [],
+        droppedCompanyTop10: [],
+        scopeNote: `【${b}】分區`
+      };
+    }
+    const cList = (rd.topClients && rd.topClients.length) ? rd.topClients : (Array.isArray(rd.allClients) ? rd.allClients : Object.values(rd.allClients || {}));
     return {
-
-      totalNet: rd.totalNet,
-
-      totalMargin: rd.totalMargin,
-
-      companyGm: rd.companyGm,
-
-      topClients: (rd.topClients || []).slice(0, 10),
-
+      totalNet: rd.totalNet || 0,
+      totalMargin: rd.totalMargin || 0,
+      companyGm: rd.companyGm || 0,
+      topClients: cList.slice(0, 10),
       droppedCompanyTop10: rd.droppedTop10 || [],
-
-      scopeNote: `【${branches[0]}】分區`
-
+      scopeNote: `【${b}】分區`
     };
-
   }
 
-
-
+  // 多區域動態重新加總彙整
   let totalNet = 0;
-
   let totalMargin = 0;
-
   const clientMap = new Map();
 
-
-
   for (const b of branches) {
-
-    const rd = cData.byRegion?.[b];
-
+    const rd = regionSource[b];
     if (!rd) continue;
-
     totalNet += rd.totalNet || 0;
-
     totalMargin += rd.totalMargin || 0;
 
+    const bClients = Array.isArray(rd.allClients) ? rd.allClients : (rd.allClients ? Object.values(rd.allClients) : (rd.topClients || []));
 
-
-    for (const c of (rd.topClients || [])) {
-
+    for (const c of bClients) {
       if (!clientMap.has(c.name)) {
-
         clientMap.set(c.name, {
-
           name: c.name,
-
           net: c.net,
-
           priorNet: c.priorNet || 0,
-
           margin: c.margin,
-
           priorMargin: c.priorMargin || 0,
-
           orders: c.orders || 0,
-
           ytdMonthlyAvgNet: c.ytdMonthlyAvgNet || 0,
-
           ytdMonthlyAvgMargin: c.ytdMonthlyAvgMargin || 0,
-
           closedMonths: c.closedMonths || 0,
-
           lastOrderDate: c.lastOrderDate,
-
           region: b,
-
           salesRep: c.salesRep,
-
           categoriesMap: new Map()
-
         });
-
         if (c.topCategories) {
-
           const entry = clientMap.get(c.name);
-
           for (const cat of c.topCategories) {
-
             entry.categoriesMap.set(cat.name, { net: cat.net, margin: cat.margin });
-
           }
-
         }
-
       } else {
-
         const exist = clientMap.get(c.name);
-
         exist.net += c.net;
-
         exist.priorNet += (c.priorNet || 0);
-
         exist.margin += c.margin;
-
         exist.priorMargin += (c.priorMargin || 0);
-
         exist.orders += (c.orders || 0);
-
         exist.ytdMonthlyAvgNet += (c.ytdMonthlyAvgNet || 0);
-
         exist.ytdMonthlyAvgMargin += (c.ytdMonthlyAvgMargin || 0);
-
         if (c.lastOrderDate && (!exist.lastOrderDate || c.lastOrderDate > exist.lastOrderDate)) {
-
           exist.lastOrderDate = c.lastOrderDate;
-
         }
-
         if (!exist.region.includes(b)) {
-
           exist.region += `/${b}`;
-
         }
-
         if (c.topCategories) {
-
           for (const cat of c.topCategories) {
-
             if (!exist.categoriesMap.has(cat.name)) {
-
               exist.categoriesMap.set(cat.name, { net: cat.net, margin: cat.margin });
-
             } else {
-
               const ec = exist.categoriesMap.get(cat.name);
-
               ec.net += cat.net;
-
               ec.margin += cat.margin;
-
             }
-
           }
-
         }
-
       }
-
     }
-
   }
 
-
-
   const compGm = totalNet ? (totalMargin / totalNet * 100) : 0;
-
   const mergedClients = Array.from(clientMap.values()).sort((a, b) => b.net - a.net);
-
   const top10 = mergedClients.slice(0, 10).map((c, idx) => {
-
     const gm = c.net ? (c.margin / c.net * 100) : null;
-
     const priorGm = c.priorNet ? (c.priorMargin / c.priorNet * 100) : null;
-
     const delta = c.net - c.priorNet;
-
     const deltaPct = c.priorNet ? Math.round(delta / c.priorNet * 1000) / 10 : null;
-
     const gmDeltaPp = (priorGm != null && gm != null) ? Math.round((gm - priorGm) * 100) / 100 : null;
 
-
-
     const tags = [];
-
     if (deltaPct !== null && deltaPct <= -30.0) {
-
       tags.push('下滑 30% 以上');
-
     } else if (deltaPct !== null && deltaPct >= 30.0) {
-
       tags.push('成長 30% 以上');
-
     } else if (deltaPct !== null && deltaPct >= -15.0 && deltaPct <= 15.0) {
-
       tags.push('±15% 內穩定');
-
     }
-
     if (gm !== null && gm < compGm) {
-
       tags.push('毛利率低於本期平均');
-
     }
-
-
 
     const topCategories = Array.from(c.categoriesMap.entries()).map(([name, val]) => ({
-
       name,
-
       net: val.net,
-
       margin: val.margin,
-
       gm: val.net ? Math.round(val.margin / val.net * 10000) / 100 : 0,
-
       share: c.net ? Math.round(val.net / c.net * 1000) / 10 : 0
-
     })).sort((a, b) => b.net - a.net);
 
-
-
     return {
-
       rank: idx + 1,
-
       name: c.name,
-
       net: c.net,
-
       priorNet: c.priorNet,
-
       delta: delta,
-
       deltaPct: deltaPct,
-
       margin: c.margin,
-
       priorMargin: c.priorMargin,
-
       gm: gm != null ? Math.round(gm * 100) / 100 : null,
-
       priorGm: priorGm != null ? Math.round(priorGm * 100) / 100 : null,
-
       gmDeltaPp: gmDeltaPp,
-
       share: totalNet ? Math.round(c.net / totalNet * 1000) / 10 : 0,
-
       orders: c.orders,
-
       avgOrderNet: c.orders ? Math.round(c.net / c.orders) : 0,
-
       lastOrderDate: c.lastOrderDate,
-
       region: c.region,
-
       salesRep: c.salesRep,
-
       tags: tags,
-
       topCategories: topCategories,
-
       ytdMonthlyAvgNet: c.ytdMonthlyAvgNet,
-
       ytdMonthlyAvgMargin: c.ytdMonthlyAvgMargin,
-
       closedMonths: c.closedMonths
-
     };
-
   });
 
-
+  const scopeNote = is5 ? '五大區合計' : (branches.length === 1 ? `【${branches[0]}】分區` : `${branches.join('＋')}（共 ${branches.length} 區）`);
 
   return {
-
     totalNet,
-
     totalMargin,
-
     companyGm: Math.round(compGm * 100) / 100,
-
     topClients: top10,
-
     droppedCompanyTop10: [],
-
-    scopeNote: `${branches.join('＋')}（共 ${branches.length} 區）`
-
+    scopeNote
   };
-
 }
-
-
 
 // 2. 新客開發合併計算函式
 
 function getMergedNewCustomersData(ncData, selectedBranches) {
-
   if (!ncData) return null;
-
   const branches = (selectedBranches && selectedBranches.length) ? selectedBranches : FIVE_BRANCH_LIST;
-
-
 
   if (branches.length === 5 && ncData.customers) {
-
     const s = ncData.summary || ncData;
-
-    const repCount = s.repurchasedCount || s.totalRepurchaseCount || (ncData.customers.filter(c => c.repurchased).length);
-
-    const repRate = s.repurchaseRate != null ? s.repurchaseRate : (s.repurchasedRate != null ? s.repurchasedRate : 0);
-
+    const repCount = s.repurchasedCount != null ? s.repurchasedCount : (ncData.customers.filter(c => c.statusCat === '已續購' || c.repurchased).length);
+    const repRate = s.repurchasedRate != null ? s.repurchasedRate : (s.repurchaseRate != null ? s.repurchaseRate : (s.totalCount ? Number((repCount / s.totalCount * 100).toFixed(1)) : 0.0));
     return {
-
       totalCount: s.totalCount,
-
       totalNet: s.totalNet,
-
+      totalCost: s.totalCost || 0,
       totalMargin: s.totalMargin || 0,
-
+      gm: s.gm != null ? s.gm : (s.totalNet ? Number((s.totalMargin / s.totalNet * 100).toFixed(2)) : 0),
       repurchasedCount: repCount,
-
       repurchasedRate: repRate,
-
       repurchaseRate: repRate,
-
-      unrepurchasedCount: s.totalCount - repCount,
-
+      pendingShipCount: s.pendingShipCount || 0,
+      unrepurchasedCount: s.unrepurchasedCount != null ? s.unrepurchasedCount : (s.totalCount - repCount),
       repurchaseNet: s.repurchaseNet || 0,
-
-      statusBreakdown: s.intervalCounts || s.statusBreakdown || {},
-
+      statusBreakdown: s.statusBreakdown || s.intervalCounts || {},
+      definitionsComparison: s.definitionsComparison || null,
       customers: ncData.customers,
-
       scopeNote: '五大區合計'
-
     };
-
   }
-
-
 
   if (branches.length === 1 && ncData.byRegion && ncData.byRegion[branches[0]]) {
-
     const rd = ncData.byRegion[branches[0]];
-
-    const repCount = rd.repurchasedCount || rd.totalRepurchaseCount || ((rd.customers || []).filter(c => c.repurchased).length);
-
-    const repRate = rd.repurchaseRate != null ? rd.repurchaseRate : (rd.repurchasedRate != null ? rd.repurchasedRate : 0);
-
+    const repCount = rd.repurchasedCount != null ? rd.repurchasedCount : ((rd.customers || []).filter(c => c.statusCat === '已續購' || c.repurchased).length);
+    const repRate = rd.repurchasedRate != null ? rd.repurchasedRate : (rd.repurchaseRate != null ? rd.repurchaseRate : (rd.totalCount ? Number((repCount / rd.totalCount * 100).toFixed(1)) : 0.0));
     return {
-
       totalCount: rd.totalCount,
-
       totalNet: rd.totalNet,
-
+      totalCost: rd.totalCost || 0,
       totalMargin: rd.totalMargin || 0,
-
+      gm: rd.gm != null ? rd.gm : (rd.totalNet ? Number((rd.totalMargin / rd.totalNet * 100).toFixed(2)) : 0),
       repurchasedCount: repCount,
-
       repurchasedRate: repRate,
-
       repurchaseRate: repRate,
-
-      unrepurchasedCount: rd.totalCount - repCount,
-
+      pendingShipCount: rd.pendingShipCount || 0,
+      unrepurchasedCount: rd.unrepurchasedCount != null ? rd.unrepurchasedCount : (rd.totalCount - repCount),
       repurchaseNet: rd.repurchaseNet || 0,
-
-      statusBreakdown: rd.intervalCounts || rd.statusBreakdown || {},
-
+      statusBreakdown: rd.statusBreakdown || rd.intervalCounts || {},
+      definitionsComparison: ncData.definitionsComparison || null,
       customers: rd.customers || [],
-
       scopeNote: `【${branches[0]}】分區`
-
     };
-
   }
-
-
 
   const allCusts = ncData.customers || [];
-
   const filtered = allCusts.filter(c => branches.includes(c.branch));
-
   const totalCount = filtered.length;
-
-  const totalNet = filtered.reduce((sum, c) => sum + (c.totalNet || c.net || 0), 0);
-
-  const totalMargin = filtered.reduce((sum, c) => sum + (c.totalMargin || c.margin || 0), 0);
-
-  const repurchasedList = filtered.filter(c => c.repurchased);
-
+  const totalNet = filtered.reduce((sum, c) => sum + (c.net || c.totalNet || 0), 0);
+  const totalCost = filtered.reduce((sum, c) => sum + (c.cost || c.totalCost || 0), 0);
+  const totalMargin = filtered.reduce((sum, c) => sum + (c.margin || c.totalMargin || 0), 0);
+  const repurchasedList = filtered.filter(c => c.statusCat === '已續購' || c.repurchased);
   const repurchasedCount = repurchasedList.length;
-
-  const repurchaseRate = totalCount ? Math.round(repurchasedCount / totalCount * 1000) / 10 : 0.0;
-
-  const repurchaseNet = repurchasedList.reduce((sum, c) => sum + (c.repurchaseNet || 0), 0);
-
-
-
+  const repurchaseRate = totalCount ? Number((repurchasedCount / totalCount * 100).toFixed(1)) : 0.0;
+  const pendingShipCount = filtered.filter(c => c.hasPendingOrder && c.statusCat !== '已續購').length;
   const intervalCounts = {
-
-    '0–30日': filtered.filter(c => c.repurchaseInterval === '0–30日').length,
-
-    '31–60日': filtered.filter(c => c.repurchaseInterval === '31–60日').length,
-
-    '61–90日': filtered.filter(c => c.repurchaseInterval === '61–90日').length,
-
-    '90日以上': filtered.filter(c => c.repurchaseInterval === '90日以上').length,
-
-    '未續購': filtered.filter(c => !c.repurchased).length,
-
+    '0–30日': filtered.filter(c => c.statusCat === '0–30日').length,
+    '31–60日': filtered.filter(c => c.statusCat === '31–60日').length,
+    '61–90日': filtered.filter(c => c.statusCat === '61–90日').length,
+    '90日以上': filtered.filter(c => c.statusCat === '90日以上').length,
+    '已下單待出貨': pendingShipCount,
+    '未續購': totalCount - repurchasedCount,
     '已續購': repurchasedCount
-
   };
-
-
 
   return {
-
     totalCount,
-
     totalNet,
-
+    totalCost,
     totalMargin,
-
+    gm: totalNet ? Number((totalMargin / totalNet * 100).toFixed(2)) : 0,
     repurchasedCount,
-
     repurchasedRate: repurchaseRate,
-
     repurchaseRate,
-
+    pendingShipCount,
     unrepurchasedCount: totalCount - repurchasedCount,
-
-    repurchaseNet,
-
+    repurchaseNet: repurchasedList.reduce((sum, c) => sum + (c.repurchaseNet || 0), 0),
     statusBreakdown: intervalCounts,
-
+    definitionsComparison: ncData.definitionsComparison || null,
     customers: filtered,
-
     scopeNote: `${branches.join('＋')}（共 ${branches.length} 區）`
-
   };
-
 }
 
-
-
 // 3. 舊客追蹤／久未交易合併計算函式
-
-function getMergedDormantData(dormSource, selectedBranches, is6mFocus) {
-
+function getMergedDormantData(dormSource, selectedBranches, is6mFocus, currentKey) {
   if (!dormSource) return null;
 
+  let pool = dormSource;
+  if (dormSource.modes && dormSource.modes.baseline) {
+    const ck = currentKey || (typeof picker !== 'undefined' && picker && picker.value && picker.value >= '2026-10' ? picker.value.slice(0, 7) : '2026-10');
+    pool = dormSource.modes.baseline[ck] || dormSource.modes.baseline['default'] || dormSource;
+  }
+
   const branches = (selectedBranches && selectedBranches.length) ? selectedBranches : FIVE_BRANCH_LIST;
-
-  const allCusts = dormSource.customers || [];
-
+  const allCusts = pool.customers || dormSource.customers || [];
   const focus6mAll = allCusts.filter(c => c.baseMonths >= 6);
 
-
-
   if (is6mFocus) {
-
     const fNet = focus6mAll.reduce((sum, c) => sum + (c.histNet || 0), 0);
-
     const fMargin = focus6mAll.reduce((sum, c) => sum + (c.histMargin || 0), 0);
-
     const fWithNew = focus6mAll.filter(c => c.hasNewOrders);
-
+    const fPending = focus6mAll.filter(c => c.hasPendingOrder && !c.hasNewOrders);
     return {
-
       totalCount: focus6mAll.length,
-
       histTotalNet: fNet,
-
       histTotalMargin: fMargin,
-
       histTotalGm: fNet ? Number((fMargin / fNet * 100).toFixed(2)) : 0,
-
       statusBreakdown: {
-
         '2個月未下單': 0,
-
         '3–4個月未下單': 0,
-
         '5個月未下單': 0,
-
         '6個月以上未下單': focus6mAll.length,
-
-        '基準日後有新增交易': fWithNew.length
-
+        '已回流出貨': fWithNew.length,
+        '已重新下單待出貨': fPending.length
       },
-
       withNewOrdersCount: fWithNew.length,
-
       withNewOrdersNet: fWithNew.reduce((sum, c) => sum + (c.newNet || 0), 0),
-
+      pendingShipCount: fPending.length,
+      stillDormantCount: focus6mAll.length - fWithNew.length - fPending.length,
       customers: focus6mAll,
-
       focus6mRows: focus6mAll,
-
       is6mFocus: true,
-
       scopeNote: '6 個月以上重點追蹤'
-
     };
-
   }
-
-
 
   if (branches.length === 5) {
-
-    const sb = dormSource.statusBreakdown || {};
-
+    const sb = pool.statusBreakdown || dormSource.statusBreakdown || {};
+    const withNewCount = pool.withNewOrdersCount != null ? pool.withNewOrdersCount : allCusts.filter(c => c.hasNewOrders).length;
+    const pendingCount = pool.pendingShipCount != null ? pool.pendingShipCount : allCusts.filter(c => c.hasPendingOrder && !c.hasNewOrders).length;
+    const stillCount = pool.stillDormantCount != null ? pool.stillDormantCount : (pool.totalCount - withNewCount - pendingCount);
     return {
-
-      totalCount: dormSource.totalCount,
-
-      histTotalNet: dormSource.histTotalNet,
-
-      histTotalMargin: dormSource.histTotalMargin,
-
-      histTotalGm: dormSource.histTotalGm || (dormSource.histTotalNet ? Number((dormSource.histTotalMargin / dormSource.histTotalNet * 100).toFixed(2)) : 0),
-
+      totalCount: pool.totalCount,
+      histTotalNet: pool.histTotalNet,
+      histTotalMargin: pool.histTotalMargin,
+      histTotalGm: pool.histTotalGm || (pool.histTotalNet ? Number((pool.histTotalMargin / pool.histTotalNet * 100).toFixed(2)) : 0),
       statusBreakdown: {
-
         '2個月未下單': sb['2個月未下單'] || allCusts.filter(c => c.baseMonths === 2).length,
-
         '3–4個月未下單': sb['3–4個月未下單'] || sb['3至4個月未下單'] || allCusts.filter(c => c.baseMonths >= 3 && c.baseMonths <= 4).length,
-
         '5個月未下單': sb['5個月未下單'] || sb['半年以內未交易'] || allCusts.filter(c => c.baseMonths === 5).length,
-
         '6個月以上未下單': sb['6個月以上未下單'] || sb['半年以上未交易'] || focus6mAll.length,
-
-        '基準日後有新增交易': dormSource.withNewOrdersCount || allCusts.filter(c => c.hasNewOrders).length
-
+        '已回流出貨': withNewCount,
+        '已重新下單待出貨': pendingCount
       },
-
-      withNewOrdersCount: dormSource.withNewOrdersCount || allCusts.filter(c => c.hasNewOrders).length,
-
-      withNewOrdersNet: dormSource.withNewOrdersNet || allCusts.filter(c => c.hasNewOrders).reduce((sum, c) => sum + (c.newNet || 0), 0),
-
+      withNewOrdersCount: withNewCount,
+      withNewOrdersNet: pool.withNewOrdersNet || allCusts.filter(c => c.hasNewOrders).reduce((sum, c) => sum + (c.newNet || 0), 0),
+      pendingShipCount: pendingCount,
+      stillDormantCount: stillCount,
       customers: allCusts,
-
       focus6mRows: focus6mAll,
-
       is6mFocus: false,
-
       scopeNote: '五大區合計'
-
     };
-
   }
 
-
-
-  if (branches.length === 1 && dormSource.byRegion && dormSource.byRegion[branches[0]]) {
-
-    const rd = dormSource.byRegion[branches[0]];
-
+  if (branches.length === 1 && pool.byRegion && pool.byRegion[branches[0]]) {
+    const rd = pool.byRegion[branches[0]];
     const bCusts = rd.customers || [];
-
     const b6m = bCusts.filter(c => c.baseMonths >= 6);
-
     const sb = rd.statusBreakdown || {};
-
     const bWithNew = bCusts.filter(c => c.hasNewOrders);
-
+    const bPending = bCusts.filter(c => c.hasPendingOrder && !c.hasNewOrders);
+    const bStill = rd.stillDormantCount != null ? rd.stillDormantCount : (rd.totalCount - bWithNew.length - bPending.length);
     return {
-
       totalCount: rd.totalCount,
-
       histTotalNet: rd.histTotalNet,
-
       histTotalMargin: rd.histTotalMargin,
-
       histTotalGm: rd.histTotalGm || (rd.histTotalNet ? Number((rd.histTotalMargin / rd.histTotalNet * 100).toFixed(2)) : 0),
-
       statusBreakdown: {
-
         '2個月未下單': sb['2個月未下單'] || bCusts.filter(c => c.baseMonths === 2).length,
-
         '3–4個月未下單': sb['3–4個月未下單'] || sb['3至4個月未下單'] || bCusts.filter(c => c.baseMonths >= 3 && c.baseMonths <= 4).length,
-
         '5個月未下單': sb['5個月未下單'] || sb['半年以內未交易'] || bCusts.filter(c => c.baseMonths === 5).length,
-
         '6個月以上未下單': sb['6個月以上未下單'] || sb['半年以上未交易'] || b6m.length,
-
-        '基準日後有新增交易': rd.withNewOrdersCount || bWithNew.length
-
+        '已回流出貨': rd.withNewOrdersCount != null ? rd.withNewOrdersCount : bWithNew.length,
+        '已重新下單待出貨': rd.pendingShipCount != null ? rd.pendingShipCount : bPending.length
       },
-
-      withNewOrdersCount: rd.withNewOrdersCount || bWithNew.length,
-
+      withNewOrdersCount: rd.withNewOrdersCount != null ? rd.withNewOrdersCount : bWithNew.length,
       withNewOrdersNet: rd.withNewOrdersNet || bWithNew.reduce((sum, c) => sum + (c.newNet || 0), 0),
-
+      pendingShipCount: rd.pendingShipCount != null ? rd.pendingShipCount : bPending.length,
+      stillDormantCount: bStill,
       customers: bCusts,
-
       focus6mRows: b6m,
-
       is6mFocus: false,
-
       scopeNote: `【${branches[0]}】分區`
-
     };
-
   }
-
-
 
   const filtered = allCusts.filter(c => branches.includes(c.branch));
-
   const f6m = filtered.filter(c => c.baseMonths >= 6);
-
   const fWithNew = filtered.filter(c => c.hasNewOrders);
-
+  const fPending = filtered.filter(c => c.hasPendingOrder && !c.hasNewOrders);
   const fNet = filtered.reduce((sum, c) => sum + (c.histNet || 0), 0);
-
   const fMargin = filtered.reduce((sum, c) => sum + (c.histMargin || 0), 0);
-
-
+  const fStill = filtered.length - fWithNew.length - fPending.length;
 
   return {
-
     totalCount: filtered.length,
-
     histTotalNet: fNet,
-
     histTotalMargin: fMargin,
-
     histTotalGm: fNet ? Number((fMargin / fNet * 100).toFixed(2)) : 0,
-
     statusBreakdown: {
-
       '2個月未下單': filtered.filter(c => c.baseMonths === 2).length,
-
       '3–4個月未下單': filtered.filter(c => c.baseMonths >= 3 && c.baseMonths <= 4).length,
-
       '5個月未下單': filtered.filter(c => c.baseMonths === 5).length,
-
       '6個月以上未下單': f6m.length,
-
-      '基準日後有新增交易': fWithNew.length
-
+      '已回流出貨': fWithNew.length,
+      '已重新下單待出貨': fPending.length
     },
-
     withNewOrdersCount: fWithNew.length,
-
     withNewOrdersNet: fWithNew.reduce((sum, c) => sum + (c.newNet || 0), 0),
-
+    pendingShipCount: fPending.length,
+    stillDormantCount: fStill,
     customers: filtered,
-
     focus6mRows: f6m,
-
     is6mFocus: false,
-
     scopeNote: `${branches.join('＋')}（共 ${branches.length} 區）`
-
   };
-
 }
 
 
@@ -2477,174 +2223,106 @@ function getMergedProductData(prodData, selectedBranches) {
 // 5. 完工未出貨合併計算函式
 
 function getMergedUnshippedData(shipSource, selectedBranches) {
-
   if (!shipSource) return null;
-
   const branches = (selectedBranches && selectedBranches.length) ? selectedBranches : FIVE_BRANCH_LIST;
+  const allOrders = shipSource.ordersList || shipSource.orders || [];
+  const allAnomalies = shipSource.deliveryAnomalies || [];
 
-  const allOrders = shipSource.ordersList || [];
+  const filtered = (branches.length === 5)
+    ? allOrders
+    : allOrders.filter(o => branches.includes(REGION_TO_BRANCH[o.region] || o.region));
 
-
-
-  if (branches.length === 5 && shipSource.summary) {
-
-    return {
-
-      summary: shipSource.summary,
-
-      ordersList: allOrders,
-
-      scopeNote: '五大區合計'
-
-    };
-
-  }
-
-
-
-  if (branches.length === 1 && shipSource.byRegion && shipSource.byRegion[branches[0]]) {
-
-    const rd = shipSource.byRegion[branches[0]];
-
-    const bOrders = allOrders.filter(o => REGION_TO_BRANCH[o.region] === branches[0]);
-
-    return {
-
-      summary: rd,
-
-      ordersList: bOrders,
-
-      scopeNote: `【${branches[0]}】分區`
-
-    };
-
-  }
-
-
-
-  const filtered = allOrders.filter(o => branches.includes(REGION_TO_BRANCH[o.region]));
+  const filteredAnomalies = (branches.length === 5)
+    ? allAnomalies
+    : allAnomalies.filter(a => branches.includes(REGION_TO_BRANCH[a.region] || a.region));
 
   const totalOrders = filtered.length;
-
   const totalLines = filtered.reduce((sum, o) => sum + (o.linesCount || (o.items ? o.items.length : 1)), 0);
-
   const distinctCusts = new Set(filtered.map(o => o.custName)).size;
-
-  const totalNet = filtered.reduce((sum, o) => sum + o.net, 0);
-
-  const totalCost = filtered.reduce((sum, o) => sum + o.cost, 0);
-
-  const totalMargin = filtered.reduce((sum, o) => sum + o.margin, 0);
-
-
+  const orderTotalNet = filtered.reduce((sum, o) => sum + (o.orderTotalNet != null ? o.orderTotalNet : (o.net || 0)), 0);
+  const completedUnshippedAmt = filtered.reduce((sum, o) => sum + (o.completedUnshippedAmt != null ? o.completedUnshippedAmt : 0), 0);
+  const totalOrderPendingAmt = filtered.reduce((sum, o) => sum + (o.totalOrderPendingAmt != null ? o.totalOrderPendingAmt : (o.pendingUnshippedAmt != null ? o.pendingUnshippedAmt : 0)), 0);
+  const pendingUnshippedAmt = totalOrderPendingAmt;
+  const completedUnshippedWorkOrders = filtered.reduce((sum, o) => sum + (o.completedUnshippedWorkOrderCount != null ? o.completedUnshippedWorkOrderCount : (o.items ? o.items.filter(it => it.isCompletedUnshippedWO).length : 0)), 0);
 
   const overdueOrders = filtered.filter(o => o.isOverdue).length;
-
   const overdueRate = totalOrders ? Math.round(overdueOrders / totalOrders * 1000) / 10 : 0.0;
 
-
-
-  const zeroOrders = filtered.filter(o => o.isZero).length;
-
+  const zeroOrders = filtered.filter(o => (o.completedUnshippedAmt === 0 || o.isZero)).length;
   const zeroRate = totalOrders ? Math.round(zeroOrders / totalOrders * 1000) / 10 : 0.0;
+  const zeroWorkOrders = filtered.reduce((sum, o) => sum + (o.zeroAmountWorkOrderCount != null ? o.zeroAmountWorkOrderCount : (o.items ? o.items.filter(it => it.isCompletedUnshippedWO && it.net === 0).length : 0)), 0);
+  const hasZeroWorkOrdersCount = filtered.filter(o => (o.zeroAmountWorkOrderCount > 0 || (o.items && o.items.some(it => it.isCompletedUnshippedWO && it.net === 0)))).length;
 
-  const zeroCost = filtered.filter(o => o.isZero).reduce((sum, o) => sum + o.cost, 0);
-
-
-
-  const nonZeroOrders = totalOrders - zeroOrders;
-
-  const nonZeroNet = filtered.filter(o => !o.isZero).reduce((sum, o) => sum + o.net, 0);
-
-  const nonZeroMargin = filtered.filter(o => !o.isZero).reduce((sum, o) => sum + o.margin, 0);
-
-  const nonZeroGm = nonZeroNet ? Math.round(nonZeroMargin / nonZeroNet * 10000) / 100 : 0.0;
-
-
-
-  const waitDaysList = filtered.map(o => o.waitDays);
-
+  const waitDaysList = filtered.map(o => o.waitDays || 0);
   const maxWait = waitDaysList.length ? Math.max(...waitDaysList) : 0;
-
   const avgWait = waitDaysList.length ? Math.round(waitDaysList.reduce((sum, w) => sum + w, 0) / waitDaysList.length * 10) / 10 : 0.0;
 
-
-
   const rangeCounts = { '0–7日': 0, '8–30日': 0, '31–60日': 0, '61–90日': 0, '90日以上': 0 };
-
   for (const o of filtered) {
-
-    if (rangeCounts[o.waitRange] !== undefined) {
-
-      rangeCounts[o.waitRange]++;
-
+    let r = o.waitRange;
+    if (!r) {
+      const w = o.waitDays || 0;
+      if (w <= 7) r = '0–7日';
+      else if (w <= 30) r = '8–30日';
+      else if (w <= 60) r = '31–60日';
+      else if (w <= 90) r = '61–90日';
+      else r = '90日以上';
+      o.waitRange = r;
     }
-
+    if (rangeCounts[r] !== undefined) {
+      rangeCounts[r]++;
+    }
   }
 
-
-
   const summary = {
-
     orders: totalOrders,
-
     lines: totalLines,
-
     customers: distinctCusts,
-
-    totalNet: totalNet,
-
-    totalCost: totalCost,
-
-    totalMargin: totalMargin,
-
+    orderTotalNet: orderTotalNet,
+    completedUnshippedAmt: completedUnshippedAmt,
+    totalOrderPendingAmt: totalOrderPendingAmt,
+    pendingUnshippedAmt: pendingUnshippedAmt,
+    completedUnshippedWorkOrders: completedUnshippedWorkOrders,
+    totalNet: completedUnshippedAmt,
+    totalCost: 0,
+    totalMargin: 0,
+    zeroCost: 0,
+    nonZeroOrders: 0,
+    nonZeroNet: 0,
+    nonZeroMargin: 0,
+    nonZeroGm: 0,
     overdueOrders: overdueOrders,
-
     overdueRate: overdueRate,
-
     zeroOrders: zeroOrders,
-
     zeroRate: zeroRate,
-
-    zeroCost: zeroCost,
-
-    nonZeroOrders: nonZeroOrders,
-
-    nonZeroNet: nonZeroNet,
-
-    nonZeroMargin: nonZeroMargin,
-
-    nonZeroGm: nonZeroGm,
-
+    zeroWorkOrders: zeroWorkOrders,
+    hasZeroWorkOrdersCount: hasZeroWorkOrdersCount,
+    deliveryAnomalyCount: filteredAnomalies.length,
+    deliveryAnomalies: filteredAnomalies,
     maxWaitDays: maxWait,
-
     avgWaitDays: avgWait,
-
-    rangeBreakdown: rangeCounts
-
+    rangeBreakdown: rangeCounts,
+    snapshotDate: shipSource.snapshotDate || ''
   };
 
-
+  const scopeNote = branches.length === 5
+    ? '五大區合計'
+    : (branches.length === 1 ? `【${branches[0]}】分區` : `${branches.join('＋')}（共 ${branches.length} 區）`);
 
   return {
-
     summary,
-
     ordersList: filtered,
-
-    scopeNote: `${branches.join('＋')}（共 ${branches.length} 區）`
-
+    deliveryAnomalies: filteredAnomalies,
+    scopeNote,
+    snapshotDate: shipSource.snapshotDate || ''
   };
-
 }
-
-
 
 function getEquipData(equipMonth, view){
 
   const EXCLUDED_EQUIP = new Set(['L001','E003','E004','E005','F001','G004']);
 
-  const raw = EQUIP[equipMonth] || EQUIP['2026-08'] || [];
+  const raw = EQUIP[equipMonth] || EQUIP['2026-09'] || EQUIP['2026-08'] || [];
 
   const arr = raw.filter(x => !EXCLUDED_EQUIP.has(x.code));
 
@@ -3270,7 +2948,7 @@ function render(){
 
           const gmDiffStr=(c.gmDeltaPp!=null&&!isNaN(c.gmDeltaPp))?` (${c.gmDeltaPp>=0?'+':''}${c.gmDeltaPp.toFixed(2)} 個百分點)`:'';
 
-          const tagsHtml=c.tags.length?c.tags.map(t=>{
+          const tagsHtml=(c.tags&&c.tags.length)?c.tags.map(t=>{
 
             const isWarn=t.includes('下滑')||t.includes('低於');
 
@@ -3294,7 +2972,7 @@ function render(){
 
         const tableRows=clientList.map(c=>{
 
-          const tagsHtml=c.tags.length?c.tags.map(t=>`<span class="tag red" style="font-size:10px;margin-right:2px;">${esc(t)}</span>`).join(''):'—';
+          const tagsHtml=(c.tags&&c.tags.length)?c.tags.map(t=>`<span class="tag red" style="font-size:10px;margin-right:2px;">${esc(t)}</span>`).join(''):'—';
 
           return `<tr><td><b>${esc(c.name)}</b></td><td class="num">${money(c.net)}</td><td class="num" style="font-weight:bold;color:#153e72;">${c.share}%</td><td class="num">${money(c.ytdMonthlyAvgNet)}</td><td class="num hide-mobile">${money(c.margin)}</td><td class="num">${c.gm!=null?c.gm.toFixed(2)+'%':'-'}</td><td style="font-size:11px;">${tagsHtml}</td></tr>`;
 
@@ -3305,9 +2983,8 @@ function render(){
       }
 
     } else {
-
-      $('customerContent').innerHTML=`${branchBtnHtml}` + (tops.length?`<table><thead><tr><th>主要客戶</th><th class="num">淨額</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th></tr></thead><tbody>${tops.map(x=>`<tr><td>${esc(x.name)}</td><td class="num">${fmt(x.net)}</td><td class="num hide-mobile">${fmt(x.margin)}</td><td class="num">${x.gm!=null?x.gm.toFixed(2)+'%':'-'}</td></tr>`).join('')}</tbody></table><div class="manage"><b>管理判讀：</b>排名用來看主要貢獻來源。</div>`:'<div class="warn">所選期間沒有客戶交易資料。</div>');
-
+      const scopeText = (mergedCust && mergedCust.scopeNote) ? mergedCust.scopeNote : '所選區域';
+      $('customerContent').innerHTML = `${branchBtnHtml}<div class="warn">所選區域【${esc(scopeText)}】在所選期間無主要客戶資料。</div><div class="manage"><b>查核提醒：</b>本區塊已啟用區域資料完整性檢查，區域資料缺失時不靜默退回全公司資料。</div>`;
     }
 
   }
@@ -3336,13 +3013,36 @@ function render(){
 
     let nNet = mergedNew ? mergedNew.totalNet : s.new_net;
 
-    let nList = mergedNew ? (mergedNew.customers || []).map(c => ({name: c.name, net: c.totalNet || c.net})) : nt;
+    let nMargin = mergedNew ? mergedNew.totalMargin : 0;
+
+    let nGm = mergedNew ? mergedNew.gm : 0;
+
+    let nList = mergedNew ? (mergedNew.customers || []) : nt;
 
     const isAllNew = (currentNewCustomerBranches.length === 5);
 
     const regionNote = mergedNew ? mergedNew.scopeNote : '五大區合計';
 
-    $('newContent').innerHTML=`${ncBranchBtnHtml}<div class="kpis"><div class="kpi"><small>${regionNote}新客數</small><b class="green">${nCnt} 間</b>${p&&isAllNew?trend(s.new_count,p.new_count,'pct',compareLabel):''}</div><div class="kpi"><small>${regionNote}新客訂單淨額</small><b>${wan(nNet)}</b>${p&&isAllNew?trend(s.new_net,p.new_net,'pct',compareLabel):''}</div></div>${nList.length?`<table><thead><tr><th>${regionNote}本期新客</th><th class="num">訂單淨額</th></tr></thead><tbody>${nList.map(x=>`<tr><td>${x.name}</td><td class="num">${fmt(x.net)}</td></tr>`).join('')}</tbody></table>`:'<div class="warn">所選期間該分區未出現符合目前新客口徑的客戶。</div>'}<div class="manage"><b>新客口徑：</b>客戶建立日期落在所選期間，且該期間有實際訂單交易。跨日回購定義依核定規格排除首日同天多單。區域分析範圍為台北、桃園、新竹、台南及大圖；分公司與桃H不納入區域分析。</div>`;
+    let repCount = mergedNew ? mergedNew.repurchasedCount : 0;
+
+    let repRate = mergedNew ? mergedNew.repurchasedRate : 0;
+
+    let pendingCount = mergedNew ? (mergedNew.pendingShipCount || 0) : 0;
+
+    let pendingBadgeText = pendingCount > 0 ? `｜已下單待出貨 ${pendingCount} 戶` : '';
+
+    $('newContent').innerHTML=`${ncBranchBtnHtml}<div class="kpis"><div class="kpi"><small>${regionNote}新客首次成交數</small><b class="green">${nCnt} 間</b><div class="note">已續購 ${repCount} 戶 (${repRate}%)${pendingBadgeText}</div></div><div class="kpi"><small>${regionNote}新客出貨營收</small><b>${wan(nNet)}</b><div class="note">出貨毛利 ${wan(nMargin)} (${nGm!=null?nGm.toFixed(2)+'%':'-'})</div></div></div>${nList.length?`<table><thead><tr><th>${regionNote}本期新客首次成交</th><th class="num">出貨營收</th><th style="text-align:center;">首次出貨日</th><th style="text-align:center;">續購狀態</th></tr></thead><tbody>${nList.map(x=>{
+      let stBadge = '';
+      if(x.statusCat==='已續購'){
+        stBadge = '<span style="background:#eaf7f1;color:#16805a;font-weight:600;padding:2px 6px;border-radius:4px;font-size:10px;">已續購</span>';
+      } else if(x.hasPendingOrder){
+        stBadge = '<span style="background:#fff7ed;color:#c2410c;font-weight:600;padding:2px 6px;border-radius:4px;font-size:10px;">首購已出貨｜續購待出貨</span>';
+      } else {
+        stBadge = `<span style="background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:4px;font-size:10px;">首購後 ${x.daysElapsed!=null?x.daysElapsed+'天':'未續購'}</span>`;
+      }
+      let crossBadge = x.isCrossMonthCreated ? ' <span style="background:#e0f2fe;color:#0369a1;padding:1px 4px;border-radius:3px;font-size:10px;">跨月成交</span>' : '';
+      return `<tr><td>${esc(x.name)}${crossBadge}</td><td class="num">${money(x.net||x.totalNet||0)}</td><td style="text-align:center;">${esc(x.firstShipDate||x.firstOrderDate||'-')}</td><td style="text-align:center;">${stBadge}</td></tr>`;
+    }).join('')}</tbody></table>`:'<div class="warn">所選期間該分區未出現符合實際出貨新客口徑的客戶。</div>'}<div class="manage"><b>新客出貨口徑：</b>以第一次實際出貨日認定新客首次成交，允許 ERP 客戶建立日跨月（如 8 月建立、9 月首次出貨）。營收、成本與毛利採實際出貨口徑計算。續購以第二張不同有效訂單之實際出貨認定；同一訂單分批出貨或已下單尚未出貨均不計入已續購。區域分析範圍為台北、桃園、新竹、台南及大圖；分公司與桃H不納入區域分析。</div>`;
 
   }
 
@@ -3360,7 +3060,13 @@ function render(){
 
     let obsRows = [];
 
+    let pendingRows = [];
+
     let obsCount = 0;
+
+    let pendingCount = 0;
+
+    let stillDormantCount = 183;
 
     let focus6mRows = [];
 
@@ -3370,7 +3076,7 @@ function render(){
 
     if(dormDrillSource){
 
-      const mergedDorm = getMergedDormantData(dormDrillSource, currentDormantBranches, currentDormantIs6m);
+      const mergedDorm = getMergedDormantData(dormDrillSource, currentDormantBranches, currentDormantIs6m, key);
 
       if(mergedDorm){
 
@@ -3394,7 +3100,13 @@ function render(){
 
         obsRows = (mergedDorm.customers || []).filter(c => c.hasNewOrders);
 
+        pendingRows = (mergedDorm.customers || []).filter(c => c.hasPendingOrder && !c.hasNewOrders);
+
         obsCount = mergedDorm.withNewOrdersCount || obsRows.length;
+
+        pendingCount = mergedDorm.pendingShipCount != null ? mergedDorm.pendingShipCount : pendingRows.length;
+
+        stillDormantCount = mergedDorm.stillDormantCount != null ? mergedDorm.stillDormantCount : (mergedDorm.totalCount - obsCount - pendingCount);
 
         regionNote = mergedDorm.scopeNote;
 
@@ -3426,9 +3138,9 @@ function render(){
 
         const statusBadge = c.hasNewOrders 
 
-          ? `<span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;line-height:1.35;white-space:normal;background:#eaf7f1;color:#16805a;font-weight:600;border:1px solid #cbe8da;">基準日後有新增交易 (${c.newOrders} 單)</span>` 
+          ? `<span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;line-height:1.35;white-space:normal;background:#eaf7f1;color:#16805a;font-weight:600;border:1px solid #cbe8da;">基準日後已回流出貨 (${c.newOrders} 單)</span>` 
 
-          : `<span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;line-height:1.35;white-space:normal;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;">基準分類保留</span>`;
+          : (c.hasPendingOrder ? `<span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;line-height:1.35;white-space:normal;background:#fff7ed;color:#c2410c;font-weight:600;border:1px solid #fed7aa;">已重新下單待出貨</span>` : `<span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;line-height:1.35;white-space:normal;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;">未再交易（持續追蹤）</span>`);
 
         return `<tr>
 
@@ -3540,11 +3252,16 @@ function render(){
 
       if(obsRows.length>0){
 
-        obsTable=`<div class="callout" style="margin-top:14px"><b>${regionNote} 基準日後有新增交易名單（共 ${obsCount} 戶，待業務確認採購性質，不直接判定為回流）：</b></div><table><thead><tr><th>客戶名稱</th><th class="num">基準狀態</th><th class="num">新增訂單數</th><th class="num">新增淨額</th></tr></thead><tbody>${obsRows.slice(0,10).map(r=>`<tr><td>${r.name}</td><td class="num">${r.tierStatus||r.baseStatus||'-'}</td><td class="num">${r.newOrders} 單</td><td class="num">${wan(r.newNet)}</td></tr>`).join('')}</tbody></table>${obsRows.length>10?`<div class="note">僅顯示前 10 筆，該區共 ${obsRows.length} 戶於 8/25 基準日後有新增交易。</div>`:''}`;
+        obsTable=`<div class="callout" style="margin-top:14px"><b>${regionNote} 基準日後已回流出貨名單（共 ${obsCount} 戶，依 8/25 後實際出貨認定）：</b></div><table><thead><tr><th>客戶名稱</th><th class="num">基準狀態</th><th class="num">新增出貨單數</th><th class="num">出貨淨額</th></tr></thead><tbody>${obsRows.slice(0,10).map(r=>`<tr><td>${r.name}</td><td class="num">${r.tierStatus||r.baseStatus||'-'}</td><td class="num">${r.newOrders} 單</td><td class="num">${wan(r.newNet)}</td></tr>`).join('')}</tbody></table>${obsRows.length>10?`<div class="note">僅顯示前 10 筆，該區共 ${obsRows.length} 戶於 8/25 基準日後有實際出貨回流。</div>`:''}`;
 
       }
 
-      $('dormantContent').innerHTML=`${dormBranchBtnHtml}<div class="kpis"><div class="kpi"><small>${regionNote} 久未交易客戶基準清單</small><b class="orange">${dCount}</b><div class="note">8/19 會議人工盤點 242 戶｜8/25 CSV 正式條件篩選 268 戶（5大分區完整對齊）</div></div><div class="kpi"><small>${regionNote} 基準歷史貢獻</small><b class="orange">${dNet}</b><div class="note">毛利 ${dMargin}；以 CSV 基準唯讀保留，不隨新交易覆寫</div></div></div><div class="compare"><div class="compare-card"><h3>2 個月未下單</h3><div class="big">${c2m}</div><div class="sub">先確認是否為正常採購週期。</div></div><div class="compare-card"><h3>3–4 個月未下單</h3><div class="big orange">${c34m}</div><div class="sub">進入優先關懷候選名單。</div></div><div class="compare-card"><h3>5 個月未下單</h3><div class="big red">${c5m}</div><div class="sub">未交易 5 個月，需優先關懷。</div></div><div class="compare-card" style="border-color:#fca5a5;background:#fff5f5;"><h3>6 個月以上未下單</h3><div class="big red">${c6m}</div><div class="sub">未交易 6 個月以上，優先確認流失或專案結束。</div><div style="margin-top:6px;"><button type="button" class="branch-btn" data-dormant-branch="6m_focus" style="font-size:11px;padding:3px 8px;border-radius:4px;background:#991b1b;color:#fff;border:none;cursor:pointer;">查看跨區集中 ${focus6mRows.length} 戶 →</button></div></div></div><div class="warn"><b>解讀提醒：</b>久未交易不直接等於流失，可能是正常採購週期、一次性專案或階段性採購。需要由業務確認原因。基準日後若有新增訂單，系統客觀標示為「基準日後有新增交易」，不直接判定為回流。區域分析範圍為台北、桃園、新竹、台南及大圖；分公司與桃H不納入區域分析。</div>${obsTable}<div class="manage"><b>後續追蹤方式：</b>依「未交易時間＋歷史營收＋歷史毛利」排序，列出高貢獻舊客名單；追蹤是否已回訪、原因分類、是否回流、回流金額。日／週模式不宜判讀舊客流失，主要以月與 YTD 追蹤。</div>`;
+      let pendingTable='';
+      if(pendingRows.length>0){
+        pendingTable=`<div class="callout" style="margin-top:14px;background:#fff7ed;border:1px solid #fed7aa;color:#c2410c;"><b>${regionNote} 基準日後已重新下單待出貨名單（共 ${pendingCount} 戶，已下單尚未出貨，待實際出貨後列入回流）：</b></div><table><thead><tr><th>客戶名稱</th><th class="num">基準狀態</th><th class="num">待出貨訂單</th><th>下單日期</th></tr></thead><tbody>${pendingRows.map(r=>`<tr><td>${r.name}</td><td class="num">${r.tierStatus||r.baseStatus||'-'}</td><td class="num">${(r.pendingOrders||[]).length||1} 單待出</td><td>${(r.pendingOrders||[])[0]?.date||r.latestOrderDate||'-'}</td></tr>`).join('')}</tbody></table>`;
+      }
+
+      $('dormantContent').innerHTML=`${dormBranchBtnHtml}<div class="kpis"><div class="kpi"><small>${regionNote} 久未交易客戶基準清單</small><b class="orange">${dCount}</b><div class="note">8/25 CSV 正式核定 268 戶（5大分區完整對齊）</div></div><div class="kpi"><small>${regionNote} 基準歷史貢獻</small><b class="orange">${dNet}</b><div class="note">歷史出貨毛利 ${dMargin}；以 CSV 基準唯讀保留</div></div><div class="kpi"><small>基準日後已回流出貨</small><b class="green">${obsCount} 戶</b><div class="note">依 8/25 後實際出貨認定</div></div><div class="kpi"><small>已重新下單（待出貨）</small><b class="orange">${pendingCount} 戶</b><div class="note">已有訂單尚未出貨，持續未交易 ${stillDormantCount} 戶</div></div></div><div class="compare"><div class="compare-card"><h3>2 個月未下單</h3><div class="big">${c2m}</div><div class="sub">先確認是否為正常採購週期。</div></div><div class="compare-card"><h3>3–4 個月未下單</h3><div class="big orange">${c34m}</div><div class="sub">進入優先關懷候選名單。</div></div><div class="compare-card"><h3>5 個月未下單</h3><div class="big red">${c5m}</div><div class="sub">未交易 5 個月，需優先關懷。</div></div><div class="compare-card" style="border-color:#fca5a5;background:#fff5f5;"><h3>6 個月以上未下單</h3><div class="big red">${c6m}</div><div class="sub">未交易 6 個月以上，優先確認流失或專案結束。</div><div style="margin-top:6px;"><button type="button" class="branch-btn" data-dormant-branch="6m_focus" style="font-size:11px;padding:3px 8px;border-radius:4px;background:#991b1b;color:#fff;border:none;cursor:pointer;">查看跨區集中 ${focus6mRows.length} 戶 →</button></div></div></div><div class="warn"><b>解讀提醒：</b>久未交易不直接等於流失，可能是正常採購週期、一次性專案或階段性採購。天數嚴格依最後實際出貨日認定。基準日後已實際出貨者計為回流出貨；已有新訂單但尚未出貨者獨立列為「已重新下單待出貨」，不直接判定為回流。區域分析範圍為台北、桃園、新竹、台南及大圖；分公司與桃H不納入區域分析。</div>${obsTable}${pendingTable}<div class="manage"><b>後續追蹤方式：</b>依「未交易時間＋歷史出貨營收＋歷史毛利」排序，列出高貢獻舊客名單；追蹤是否已回訪、原因分類、是否回流、回流金額。日／週模式不宜判讀舊客流失，主要以月與 YTD 追蹤。</div>`;
 
     }
 
@@ -3553,34 +3270,80 @@ function render(){
 
 
     const shipBranchBtnHtml = renderMultiRegionSelectorHtml('ship', currentShipBranches);
-
     const shipSource = (typeof window !== 'undefined' && window.UNSHIPPED_DRILLDOWN) ? (window.UNSHIPPED_DRILLDOWN[mode]?.[key] || window.UNSHIPPED_DRILLDOWN['month']?.[key] || window.UNSHIPPED_DRILLDOWN['month']?.['2026-09']) : null;
-
     const mergedShip = getMergedUnshippedData(shipSource, currentShipBranches);
 
-    const u = mergedShip ? {
-
-      order_count: mergedShip.summary.orders,
-
-      line_count: mergedShip.summary.lines,
-
-      zero_order_count: mergedShip.summary.zeroOrders,
-
-      max_days: mergedShip.summary.maxWaitDays
-
-    } : (s.unshipped || { order_count: 0, line_count: 0, zero_order_count: 0, max_days: 0 });
-
-    const pu = p && p.unshipped;
-
-    const isAllShip = (currentShipBranches.length === 5);
+    const u = mergedShip ? mergedShip.summary : {
+      orders: 0,
+      lines: 0,
+      completedUnshippedWorkOrders: 0,
+      completedUnshippedAmt: 0,
+      totalOrderPendingAmt: 0,
+      pendingUnshippedAmt: 0,
+      zeroWorkOrders: 0,
+      zeroOrders: 0,
+      maxWaitDays: 0,
+      avgWaitDays: 0
+    };
 
     const shipRegionNote = mergedShip ? mergedShip.scopeNote : '五大區合計';
+    const snapshotDate = shipSource?.snapshotDate || '';
 
-    const isUnfinShip = (key === '2026-10' || key >= '2026-10' || (mode === 'day' && s.end >= '2026-10-12') || (mode === 'week' && s.end >= '2026-10-12'));
+    // 防護一與防護二：限制在 mode === 'month'，並依 snapshotDate 是否為結月日 25 日動態判斷完整性
+    let trendHtml = '';
+    let shipCalloutHtml = '';
 
-    const unfinShipCallout = isUnfinShip ? '<div class="warn" style="margin-top:8px;background:#fffbe6;border:1px solid #ffe58f;color:#d46b08;font-size:12px;"><b>⚠️ 資料限制說明：</b>10 月數據為依增量訂單重建之進行中候選清單。因分週匯出檔未包含 10/12 前歷史單據之最新出貨狀態回寫，舊單若於 10/12 後出貨仍可能列於此處，非官方期末定案快照（官方定案快照請以 9 月管理月已核定 573 單／1,328 筆明細為準）。</div>' : '';
+    if (mode === 'month') {
+      const isCompleteMonth = Boolean(snapshotDate && snapshotDate.endsWith('-25'));
+      const pKey = prevMonthKey(key);
+      const priorSource = (typeof window !== 'undefined' && window.UNSHIPPED_DRILLDOWN?.month?.[pKey]) || null;
+      const mergedPrior = priorSource ? getMergedUnshippedData(priorSource, currentShipBranches) : null;
 
-    $('shipContent').innerHTML=`${shipBranchBtnHtml}<div class="kpis"><div class="kpi"><small>${shipRegionNote}期末未出貨訂單</small><b class="red">${u.order_count} 單</b>${pu && isAllShip ? trend(u.order_count, pu.order_count, 'pct', compareLabel) : ''}<div class="note">明細 ${u.line_count} 筆</div></div><div class="kpi"><small>最長等待</small><b class="orange">${u.max_days} 天</b><div class="note">總額為 0 的訂單 ${u.zero_order_count} 單</div></div></div><div class="warn"><b>口徑提醒：</b>此處為依訂單明細重建的期末快照（已排除庫存生產單與現銷），最長等待天數採最早完工日起算。${shipRegionNote}零金額訂單 ${u.zero_order_count} 單，最長等待天數 ${u.max_days} 天。</div>${unfinShipCallout}`;
+      if (isCompleteMonth) {
+        if (mergedPrior && mergedPrior.summary) {
+          const priorAmt = mergedPrior.summary.completedUnshippedAmt;
+          const diffAmt = u.completedUnshippedAmt - priorAmt;
+          const diffPct = priorAmt > 0 ? (diffAmt / priorAmt * 100) : 0;
+          const sign = diffAmt > 0 ? '+' : '';
+          trendHtml = `<span class="trend ${diffAmt > 0 ? 'up' : (diffAmt < 0 ? 'down' : '')}" title="前期 (${pKey} 期末 25日): ${money(priorAmt)}">${sign}${diffPct.toFixed(1)}% vs 上期</span>`;
+        } else {
+          trendHtml = `<span style="font-size:11px;color:#94a3b8;margin-left:4px;">（首期基準無前期比較）</span>`;
+        }
+      } else {
+        // 未完整管理月（例如 2026-11 快照至 10-29）：不得顯示 MoM %，呈現存量淨增減數值，亦不描述為已出貨消化
+        if (mergedPrior && mergedPrior.summary) {
+          const diffOrd = u.orders - mergedPrior.summary.orders;
+          const diffAmt = u.completedUnshippedAmt - mergedPrior.summary.completedUnshippedAmt;
+          const diffOrdTxt = diffOrd >= 0 ? `淨增加 ${diffOrd} 單` : `淨減少 ${Math.abs(diffOrd)} 單`;
+          const diffAmtTxt = diffAmt >= 0 ? `增加 ${money(diffAmt)}` : `減少 ${money(Math.abs(diffAmt))}`;
+          trendHtml = `<span style="font-size:11px;color:#0284c7;font-weight:bold;margin-left:4px;">（存量${diffOrdTxt}、${diffAmtTxt}）</span>`;
+
+          const priorSnap = priorSource?.snapshotDate ? fmtDate(priorSource.snapshotDate).slice(5) : '10/25';
+          shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;font-size:12px;"><b>ℹ️ 未完整管理月存量提示：</b>${esc(key)} 管理月尚未完整，資料統計至 ${esc(snapshotDate)}。較前期（${priorSnap} 期末），${shipRegionNote}完工未出貨存量${diffOrdTxt}、${diffAmtTxt}。因本期天數未達完整月，存量增減僅反映兩時點快照淨差，不呈現月增率（MoM %），亦不描述為已出貨消化。</div>`;
+        }
+      }
+    }
+
+    $('shipContent').innerHTML = `${shipBranchBtnHtml}
+<div class="kpis">
+  <div class="kpi">
+    <small>${shipRegionNote}完工未出貨</small>
+    <b class="red">${fmt(u.completedUnshippedWorkOrders)} 工單</b> <span style="font-size:13px;font-weight:normal;color:#64748b;">(${fmt(u.orders)} 訂單)</span>
+    ${trendHtml}
+    <div class="note">完工未出金額 <b style="color:#1d4ed8;">${money(u.completedUnshippedAmt)}</b></div>
+    <div class="note" style="margin-top:2px;font-size:11px;color:#64748b;">整單待出總額 ${money(u.totalOrderPendingAmt)}</div>
+  </div>
+  <div class="kpi">
+    <small>最長等待</small>
+    <b class="orange">${u.maxWaitDays} 天</b>
+    <div class="note">平均等待 ${u.avgWaitDays} 天</div>
+    <div class="note" style="margin-top:2px;font-size:11px;color:#64748b;">零淨額工單 ${u.zeroWorkOrders} 張（待確認）</div>
+  </div>
+</div>
+<div class="warn" style="margin-top:8px;font-size:12px;line-height:1.6;">
+  <b>第四階段 Option B 工單口徑：</b>統計基準為截至快照日（${esc(snapshotDate || '-')}）已完工、尚未出貨且有效交件日不晚於快照日之工單。主指標採完工未出金額 <b>${money(u.completedUnshippedAmt)}</b>；零淨額工單共 <b>${u.zeroWorkOrders} 張</b> 保留供計價確認。
+</div>
+${shipCalloutHtml}`;
 
 
 
@@ -3616,7 +3379,7 @@ function render(){
 
   let isSeptEquip=(mkey==='2026-09'&&(!EQUIP['2026-09']||!EQUIP['2026-09'].length));
 
-  let equipMonth=EQUIP[mkey]?mkey:'2026-08';
+  let equipMonth=EQUIP[mkey]?mkey:'2026-09';
 
   let rawArr=EQUIP[equipMonth]||[];
 
@@ -3702,21 +3465,21 @@ function render(){
 
     const isFiltered = (currentDongBranches.length < 5);
 
-    const activeNet = isFiltered ? (mergedDong?.totalNet || 0) : dz.sales;
+    const activeNet = mergedDong?.totalNet ?? (dz?.net ?? 0);
 
-    const activeMargin = isFiltered ? (mergedDong?.totalMargin || 0) : dz.margin;
+    const activeMargin = mergedDong?.totalMargin ?? (dz?.margin ?? 0);
 
-    const activeGm = isFiltered ? (mergedDong?.totalGm) : dz.gm;
+    const activeGm = mergedDong?.totalGm ?? (dz?.gm ?? null);
 
-    const activeCustCount = isFiltered ? (mergedDong?.customerCount || 0) : dz.customers;
+    const activeShippedCustCount = mergedDong ? (mergedDong.shippedCustomers ?? 0) : 0;
 
-    const activeOrderCount = isFiltered ? (mergedDong?.orderCount || 0) : dz.orders;
+    const activeShippedOrderCount = mergedDong ? (mergedDong.shippedOrders ?? 0) : 0;
 
-    const activeQty = isFiltered ? (mergedDong?.totalSheets || 0) : (dz.units?.['片'] || 0);
+    const activeQty = mergedDong?.placedQty ?? (mergedDong?.totalSheets ?? (dz?.units?.['片'] ?? 0));
 
-    const activeShippedQty = isFiltered ? (mergedDong?.shippedUnits?.['片'] || 0) : (dz.shippedUnits?.['片'] || 0);
+    const activeShippedQty = mergedDong?.shippedUnits?.['片'] ?? (dz?.shippedUnits?.['片'] ?? 0);
 
-    const activeShippedNet = isFiltered ? (mergedDong?.shippedNet || 0) : (dz.shippedNet || 0);
+    const activeShippedNet = mergedDong?.shippedNet ?? (mergedDong?.totalNet ?? (dz?.shippedNet ?? 0));
 
 
 
@@ -3762,19 +3525,19 @@ function render(){
 
       <div class="kpis">
 
-        <div class="kpi"><small>訂購數量（片）</small><b class="purple">${dzOrdUnits}</b>${(pd && !isFiltered)?trend(dz.qty,pd.qty,'pct',compareLabel):''}<div class="note">已出貨：${dzShpUnits}（${wan(activeShippedNet)}）</div></div>
+        <div class="kpi"><small>訂購需求數量（片）</small><b class="purple">${dzOrdUnits}</b><div class="note">已出貨履約：${dzShpUnits}（${wan(activeShippedNet)}）</div></div>
 
-        <div class="kpi"><small>訂單淨額</small><b class="blue">${wan(activeNet)}</b>${(pd && !isFiltered)?trend(dz.sales,pd.sales,'pct',compareLabel):''}<div class="note">交易客戶 ${activeCustCount} 戶、訂單 ${activeOrderCount} 單</div></div>
+        <div class="kpi"><small>出貨總營收</small><b class="blue">${wan(activeNet)}</b><div class="note">出貨客戶 ${activeShippedCustCount} 戶、出貨訂單 ${activeShippedOrderCount} 單</div></div>
 
-        <div class="kpi"><small>毛利</small><b class="green">${wan(activeMargin)}</b>${(pd && !isFiltered)?trend(dz.margin,pd.margin,'pct',compareLabel):''}</div>
+        <div class="kpi"><small>出貨毛利</small><b class="green">${wan(activeMargin)}</b></div>
 
-        <div class="kpi"><small>毛利率</small><b class="${activeGm!=null&&activeGm<15?'orange':'green'}">${activeGm!=null?activeGm.toFixed(2)+'%':'-'}</b>${(pd && !isFiltered)?trend(dz.gm,pd.gm,'pp',compareLabel):''}</div>
+        <div class="kpi"><small>出貨毛利率</small><b class="${activeGm!=null&&activeGm<15?'orange':'green'}">${activeGm!=null?activeGm.toFixed(2)+'%':'-'}</b></div>
 
       </div>
 
-      <div class="callout"><b>新版整合口徑：</b>全面依明細「中類」欄位為「東澤、東澤特規、東澤特規+」直接納入，取消舊版指定客戶白名單、黑名單及特定業務分區限制。依全公司標準排除分公司與桃H，全面納入各區現銷；省區歸入桃園；大圖獨立為第 5 區。依「訂購單別」區分為物料（物料訂購單）與製品（製品訂購單）。數量單位「片」與「個」分開統計，已出貨僅採計實際出貨日 &le; 查詢截止日。同一客戶若同時購買物料與製品已合併計算並重新推算毛利率。日／週／月／YTD 皆依訂購日期動態重新彙總。</div>
+      <div class="callout"><b>新版整合口徑：</b>全面依明細「中類」欄位為「東澤、東澤特規、東澤特規+」直接納入，取消舊版指定客戶白名單、黑名單及特定業務分區限制。依全公司標準排除分公司與桃H，全面納入各區現銷；省區歸入桃園；大圖獨立為第 5 區。依「訂購單別」區分為物料（物料訂購單）與製品（製品訂購單）。數量單位「片」與「個」分開統計，已出貨僅採計實際出貨日 &le; 查詢截止日。同一客戶若同時購買物料與製品已合併計算並重新推算毛利率。東澤訂購需求依訂購日期彙總；實際出貨營收、出貨毛利及出貨片數嚴格依實際出貨日期統計（恪遵查詢截止日），兩者口徑獨立，不互相混充。</div>
 
-      ${dzCustRows?`<table><thead><tr><th>東澤客戶（${scopeName}）</th><th class="num">訂單淨額</th><th class="num hide-mobile">毛利</th><th class="num">毛利率</th><th class="num">數量</th></tr></thead><tbody>${dzCustRows}</tbody></table><div class="note" style="margin-top:8px;">顯示前 10 大東澤整合客戶（本期【${scopeName}】交易客戶共 ${activeCustCount} 戶，2026 YTD 全年累計 454 戶）。點擊下方「查看改善方式」可展開完整客戶排行榜、五大區域結構及出貨追蹤。</div>`:''}
+      ${dzCustRows?`<table><thead><tr><th>東澤客戶（${scopeName}）</th><th class="num">出貨營收</th><th class="num hide-mobile">出貨毛利</th><th class="num">毛利率</th><th class="num">出貨數量</th></tr></thead><tbody>${dzCustRows}</tbody></table><div class="note" style="margin-top:8px;">顯示前 10 大東澤整合客戶（本期【${scopeName}】出貨客戶共 ${activeShippedCustCount} 戶）。點擊下方「查看改善方式」可展開完整客戶排行榜、五大區域結構及出貨追蹤。</div>`:''}
 
     `;
 
@@ -4342,9 +4105,16 @@ function decisions(){
 
 
 
-  const u=s.unshipped || { order_count: 0, line_count: 0, zero_order_count: 0, max_days: 0 };
+  const shipSrc = (typeof window !== 'undefined' && window.UNSHIPPED_DRILLDOWN?.month?.[mk]) || null;
+  const u = shipSrc ? {
+    order_count: shipSrc.summary.orders,
+    line_count: shipSrc.summary.completedUnshippedWorkOrders,
+    completedUnshippedAmt: shipSrc.summary.completedUnshippedAmt,
+    zero_order_count: shipSrc.summary.zeroWorkOrders,
+    max_days: shipSrc.summary.maxWaitDays
+  } : (s.unshipped || { order_count: 0, line_count: 0, zero_order_count: 0, completedUnshippedAmt: 0, max_days: 0 });
 
-  add('shipment','完工未出貨｜補齊零金額與長等待案件',`期末快照 ${u.order_count} 單／${u.line_count} 筆明細；零金額 ${u.zero_order_count} 單；最長等待 ${u.max_days} 天。`,'請出貨窗口匯出訂單編號、完工日、金額與卡點。零金額先核對是否贈品或漏填，再逐單確認可出貨日。','出貨窗口＋業務＋財務','建議 3 日內完成零金額原因核對；每週對同一批案件核對已出貨、取消及剩餘數。','已排除現銷；零金額訂單請優先查明是漏價或贈品樣品；天數採最早完工日起算。',null,null,null,{drillMonth:mk,cutoffDate:s.end});
+  add('shipment','完工未出貨｜補齊零金額與長等待案件',`期末快照 ${u.order_count} 單／${u.line_count} 工單；完工未出金額 ${money(u.completedUnshippedAmt || 0)}；最長等待 ${u.max_days} 天。`,'請出貨窗口匯出訂單編號、工單單號、完工日、金額與卡點。零淨額工單先核對計價方式，再逐單確認可出貨日。','出貨窗口＋業務＋財務','建議 3 日內完成零金額原因核對；每週對同一批案件核對已出貨、取消及剩餘數。','依第四階段 Option B 工單口徑判定；零淨額工單請優先查明計價方式；天數採最早完工日起算。',null,null,null,{drillMonth:mk,cutoffDate:s.end});
 
 
 
@@ -4644,7 +4414,7 @@ function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDat
 
  const data=drillPool[effectiveMk]||null;
 
- if(!data||!data.topClients||!data.topClients.length){
+ if(!data||(!data.topClients && !data.allClients)){
 
   return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">${branchBtnsHtml}<div class="warn">所選期間暫無客戶下鑽資料。</div></div>`;
 
@@ -4845,1174 +4615,729 @@ function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDat
 }
 
 function renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus,selectedBranch){
-
  if(mode==='day'||mode==='week'){
-
   const summaryObj=getSummary(picker.value);
-
   const s=summaryObj.s;
-
   const newCustList=s.new_customers||[];
-
-  const rowsHtml=newCustList.length?newCustList.map(c=>`<tr><td>${esc(c.name)}</td><td class="num">${money(c.net)}</td><td>當期新增</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:#6f7783;padding:12px;">當期無新增客戶</td></tr>';
-
+  const rowsHtml=newCustList.length?newCustList.map(c=>`<tr><td>${esc(c.name)}</td><td class="num">${money(c.net)}</td><td>當期建立</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:#6f7783;padding:12px;">當期無新增客戶</td></tr>';
   return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">
-
    <div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
-
-    <b>查核提醒：</b>30／60／90 天續購追蹤以月／YTD 週期檢核為宜；日／週模式僅呈現當期建立之新客名單。
-
+    <b>查核提醒：</b>新客實際出貨成交與 30／60／90 天續購追蹤以管理月／YTD 週期檢核為準；日／週模式僅呈現當期建立之客戶清單。
    </div>
-
    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
-
-    <h4 style="margin:0 0 8px;font-size:13px;color:#153e72;">當期建立新客名單（共 ${s.new_count||0} 戶，訂單淨額 ${money(s.new_net||0)}）</h4>
-
+    <h4 style="margin:0 0 8px;font-size:13px;color:#153e72;">當期建立客戶清單（共 ${s.new_count||0} 戶，訂單淨額 ${money(s.new_net||0)}）</h4>
     <table style="width:100%;font-size:12px;"><thead><tr><th>客戶名稱</th><th class="num">訂單淨額</th><th>備註</th></tr></thead><tbody>${rowsHtml}</tbody></table>
-
    </div>
-
   </div>`;
-
  }
 
  const activeBranches = normalizeBranchInput(selectedBranch || currentNewCustomerBranches);
-
  const curBranch = selectedBranch || currentNewCustomerBranch || '全部';
-
  const branchBtnsHtml = renderMultiRegionSelectorHtml('new-modal', activeBranches);
-
  const ncSource=(typeof NEW_CUSTOMER_DRILLDOWN!=='undefined'?NEW_CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.NEW_CUSTOMER_DRILLDOWN:null))||{};
-
  const drillMode=(mode==='ytd')?'ytd':'month';
-
  const pool=ncSource[drillMode]||{};
-
  const effectiveMk=pool[drillMonth]?drillMonth:(pool['2026-08']?'2026-08':Object.keys(pool)[0]);
-
  const rootData=pool[effectiveMk]||null;
 
  if(!rootData||!rootData.customers){
-
   return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">${branchBtnsHtml}<div class="warn">所選期間暫無新客下鑽資料。</div></div>`;
-
  }
 
  const data = getMergedNewCustomersData(rootData, activeBranches);
-
- const cutoffStr=cutoffDate?(cutoffDate.slice(5,7)+'/'+cutoffDate.slice(8,10)):'09/13';
-
- const tagTitle=(mode==='ytd')?`2026 YTD 累計｜訂單截至 ${cutoffStr}`:`${Number(effectiveMk.slice(5))} 月管理月口徑`;
-
+ const cutoffStr=cutoffDate?(cutoffDate.slice(5,7)+'/'+cutoffDate.slice(8,10)):'10/25';
+ const tagTitle=(mode==='ytd')?`2026 YTD 累計｜出貨截至 ${cutoffStr}`:`${Number(effectiveMk.slice(5))} 月管理月出貨口徑`;
  const activeFilter=filterStatus||'全部';
-
  const branchLabel = data ? data.scopeNote : '五大區合計';
+ const comp = data.definitionsComparison || {};
 
-
+ const defBoxHtml = (comp.defFirstTraded_count != null) ? `
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px;background:#f1f5f9;border:1px solid #cbd5e1;padding:10px 12px;border-radius:8px;font-size:11px;">
+   <div><span style="color:#64748b;">本期新客首次成交：</span><b style="color:#153e72;font-size:13px;display:block;margin-top:2px;">${comp.defFirstTraded_count} 戶</b></div>
+   <div><span style="color:#64748b;">本期 ERP 建立新客：</span><b style="color:#0f766e;font-size:13px;display:block;margin-top:2px;">${comp.defCreatedInPeriod_count} 戶</b></div>
+   <div><span style="color:#64748b;">本期建立且本期成交：</span><b style="color:#0284c7;font-size:13px;display:block;margin-top:2px;">${comp.defCreatedAndTraded_count} 戶</b></div>
+   <div><span style="color:#64748b;">跨月建立本期首次出貨：</span><b style="color:#d97706;font-size:13px;display:block;margin-top:2px;">${(comp.defFirstTraded_count - comp.defCreatedAndTraded_count) > 0 ? (comp.defFirstTraded_count - comp.defCreatedAndTraded_count) + ' 戶' : '0 戶'}</b></div>
+   <div><span style="color:#64748b;">已建立尚未首次出貨：</span><b style="color:#64748b;font-size:13px;display:block;margin-top:2px;">${comp.defPendingTrade_count || 0} 戶</b></div>
+  </div>` : '';
 
  const kpiCardsHtml=`
-
-  <div class="kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px;">
-
+  <div class="kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px;">
    <div class="kpi" style="padding:10px;">
-
-    <small>${curBranch==='全部'?'本期':'【'+curBranch+'】'}新客數</small>
-
+    <small>${curBranch==='全部'?'本期':'【'+curBranch+'】'}新客首次成交</small>
     <b style="font-size:22px;color:#153e72;">${data.totalCount} 戶</b>
-
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">實際出貨首次落在本期</div>
    </div>
-
    <div class="kpi" style="padding:10px;">
-
-    <small>${curBranch==='全部'?'新客':'【'+curBranch+'】'}訂單淨額</small>
-
+    <small>新客實際出貨營收</small>
     <b style="font-size:22px;">${money(data.totalNet)}</b>
-
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">出貨毛利 ${money(data.totalMargin)} (${data.gm!=null?data.gm.toFixed(2)+'%':'-'})</div>
    </div>
-
    <div class="kpi" style="padding:10px;">
-
     <small>已續購戶數 (續購率)</small>
-
     <b style="font-size:22px;color:#16805a;">${data.repurchasedCount} 戶 <span style="font-size:13px;color:#6f7783;font-weight:normal;">(${data.repurchasedRate}%)</span></b>
-
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">第二張有效出貨訂單認定</div>
    </div>
-
    <div class="kpi" style="padding:10px;">
-
-    <small>尚未續購戶數</small>
-
-    <b style="font-size:22px;color:${data.unrepurchasedCount>0?'#cf3f49':'#16805a'};">${data.unrepurchasedCount} 戶</b>
-
+    <small>首購已出貨｜續購待出貨</small>
+    <b style="font-size:22px;color:#ea580c;">${data.pendingShipCount || 0} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">已下單尚未出貨，未計入續購</div>
    </div>
-
+   <div class="kpi" style="padding:10px;">
+    <small>尚未續購戶數</small>
+    <b style="font-size:22px;color:${data.unrepurchasedCount>0?'#cf3f49':'#16805a'};">${data.unrepurchasedCount} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">首出貨後持續追蹤續購需求</div>
+   </div>
   </div>
-
  `;
-
-
 
  const bkd=data.statusBreakdown||{};
-
  const filterTabs=[
-
   {key:'全部',label:`全部 (${data.totalCount})`},
-
-  {key:'已續購',label:`已續購 (${bkd['已續購']||0})`},
-
+  {key:'已續購',label:`已續購 (${bkd['已續購']||data.repurchasedCount||0})`},
+  {key:'首購已出貨｜續購待出貨',label:`首購已出貨｜續購待出貨 (${bkd['已下單待出貨']||data.pendingShipCount||0})`},
   {key:'0–30日',label:`0–30日未續購 (${bkd['0–30日']||0})`},
-
   {key:'31–60日',label:`31–60日未續購 (${bkd['31–60日']||0})`},
-
   {key:'61–90日',label:`61–90日未續購 (${bkd['61–90日']||0})`},
-
   {key:'90日以上',label:`90日以上未續購 (${bkd['90日以上']||0})`}
-
  ];
 
  const tabsHtml=filterTabs.map(t=>{
-
   const isAct=(t.key===activeFilter);
-
   return `<button type="button" class="status-tab ${isAct?'active':''}" data-status-filter="${esc(t.key)}" style="padding:5px 10px;font-size:11px;font-weight:bold;border-radius:8px;border:1px solid ${isAct?'#153e72':'#cbd8e7'};background:${isAct?'#153e72':'#fff'};color:${isAct?'#fff':'#153e72'};cursor:pointer;">${esc(t.label)}</button>`;
-
  }).join(' ');
-
-
 
  let filtered=data.customers||[];
-
- if(activeFilter!=='全部'){
-
+ if(activeFilter==='已續購'){
+  filtered=filtered.filter(c=>c.statusCat==='已續購'||c.repurchased);
+ } else if(activeFilter==='首購已出貨｜續購待出貨'){
+  filtered=filtered.filter(c=>c.hasPendingOrder && c.statusCat!=='已續購');
+ } else if(activeFilter!=='全部'){
   filtered=filtered.filter(c=>c.statusCat===activeFilter);
-
  }
 
-
-
  const tableRowsHtml=filtered.length?filtered.map(c=>{
-
   let badgeStyle='';
-
-  if(c.statusCat==='已續購'){
-
-   badgeStyle='background:#eaf7f1;color:#16805a;border:1px solid #cbe8da;';
-
+  let badgeText=esc(c.statusLabel||c.statusCat||'-');
+  if(c.statusCat==='已續購'||c.repurchased){
+   badgeStyle='background:#eaf7f1;color:#16805a;border:1px solid #cbe8da;font-weight:bold;';
+   badgeText='已續購 (2張出貨單)';
+  }else if(c.hasPendingOrder){
+   badgeStyle='background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;font-weight:bold;';
+   badgeText='首購已出貨｜續購待出貨';
   }else if(c.statusCat==='0–30日'){
-
    badgeStyle='background:#edf4fb;color:#2d6fb2;border:1px solid #cbd8e7;';
-
   }else if(c.statusCat==='31–60日'){
-
    badgeStyle='background:#fff5e9;color:#ad6518;border:1px solid #f3d0a7;';
-
   }else if(c.statusCat==='61–90日'){
-
    badgeStyle='background:#fff0f1;color:#cf3f49;border:1px solid #ffd2d5;';
-
   }else{
-
    badgeStyle='background:#ffe4e6;color:#9f1239;border:1px solid #fecdd3;font-weight:bold;';
-
   }
-
   const gmStr=(c.gm!=null&&!isNaN(c.gm))?`${c.gm.toFixed(2)}%`:'-';
+  const crossBadge = c.isCrossMonthCreated ? '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;margin-left:4px;">跨月成交</span>' : '';
+  const shipOrdersCount = c.shippedOrders || c.orders || 1;
 
   return `<tr>
-
-   <td style="font-weight:600;">${esc(c.name)}</td>
-
+   <td style="font-weight:600;">${esc(c.name)}${crossBadge}</td>
    <td style="white-space:nowrap;">${esc(c.createdDate||'-')}</td>
-
-   <td style="white-space:nowrap;">${esc(c.firstOrderDate||'-')}</td>
-
-   <td style="white-space:nowrap;">${esc(c.lastOrderDate||'-')}</td>
-
-   <td class="num">${c.orders}</td>
-
-   <td class="num" style="font-weight:bold;color:#153e72;">${money(c.net)}</td>
-
+   <td style="white-space:nowrap;">${esc(c.firstShipDate||c.firstOrderDate||'-')}</td>
+   <td style="white-space:nowrap;">${esc(c.lastShipDate||c.lastOrderDate||'-')}</td>
+   <td class="num">${shipOrdersCount}</td>
+   <td class="num" style="font-weight:bold;color:#153e72;">${money(c.net||c.totalNet||0)}</td>
    <td class="num">${gmStr}</td>
-
-   <td><span style="display:inline-block;padding:3px 7px;border-radius:999px;font-size:11px;white-space:nowrap;${badgeStyle}">${esc(c.statusLabel)}</span></td>
-
+   <td style="text-align:center;"><span style="display:inline-block;padding:3px 7px;border-radius:999px;font-size:11px;white-space:nowrap;${badgeStyle}">${badgeText}</span></td>
    <td>${esc(c.region)} / ${esc(c.salesRep)}</td>
-
   </tr>`;
-
  }).join(''):`<tr><td colspan="9" style="text-align:center;color:#6f7783;padding:16px;">所選狀態（${esc(activeFilter)}）無符合客戶。</td></tr>`;
 
-
-
  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">
-
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-
    <h3 style="margin:0;font-size:15px;color:#102b50;">05 新客追蹤與 30／60／90 天續購分級（${esc(branchLabel)}）</h3>
-
    <span class="tag blue" style="font-size:11px;">${esc(tagTitle)}</span>
-
   </div>
-
   <div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
-
-   <b>核定口徑說明：</b>新客首次交易後，至少有一筆訂單日期晚於首次交易日（跨日）才計為已續購；同一首次交易日內多張訂單視為同次首購行為。未續購者依首次交易日至截止日之客觀天數分級。預設依累計淨額由高至低排列。分區切換依該區獨立母體重算。區域分析範圍為台北、桃園、新竹、台南及大圖；分公司與桃H不納入區域分析。
-
+   <b>第三階段核定出貨口徑說明：</b><br>
+   1. <b>首次成交認定：</b>以第一次「實際出貨日」認定新客首次成交，允許跨管理月建立與成交（如 8 月建立客戶、9 月首次出貨，正確歸入 9 月首次成交）。<br>
+   2. <b>續購認定：</b>續購嚴格以「第二張不同有效訂單之實際出貨」認定；同一訂單分批出貨或已下單尚未出貨均不計入已續購，客觀標示為「首購已出貨｜續購待出貨」。<br>
+   3. <b>營收毛利：</b>營收、成本與毛利採實際出貨口徑計算。預設依累計出貨淨額由高至低排列。分區切換依該區獨立母體重算。
   </div>
-
   ${branchBtnsHtml}
-
+  ${defBoxHtml}
   ${kpiCardsHtml}
-
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${tabsHtml}</div>
-
   <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;overflow-x:auto;">
-
    <table style="width:100%;font-size:11px;min-width:760px;">
-
     <thead>
-
      <tr>
-
       <th>客戶名稱</th>
-
-      <th>建立日期</th>
-
-      <th>首次交易日</th>
-
-      <th>最近交易日</th>
-
-      <th class="num">訂單數</th>
-
-      <th class="num">累計淨額</th>
-
+      <th>ERP建立日期</th>
+      <th>首次實際出貨日</th>
+      <th>最近實際出貨日</th>
+      <th class="num">出貨訂單數</th>
+      <th class="num">出貨營收</th>
       <th class="num">毛利率</th>
-
-      <th>續購狀態</th>
-
+      <th style="text-align:center;">續購狀態</th>
       <th>區域／業務</th>
-
      </tr>
-
     </thead>
-
     <tbody>${tableRowsHtml}</tbody>
-
    </table>
-
   </div>
-
   <div class="callout" style="margin-top:14px;font-size:12px;line-height:1.7;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;">
-
    <b>待主管確認項目（線下客情與管理處置）：</b><br>
-
-   • <b>7 日回訪追蹤：</b>請業務主管安排 7 日內回訪尚未續購之新客，逐戶確認第二次採購需求與預計日期（因 ERP 無 CRM 拜訪記錄，由主管線下確認並追蹤，系統不自動判定是否完成）。<br>
-
-   • <b>採購週期確認：</b>90 日以上未續購者（共 ${bkd['90日以上']||0} 戶），由業務主管確認是否屬一次性裝潢專案、設備換新或常態採購週期偏長，不直接認定為客戶流失。<br>
-
-   • <b>價格與折讓回饋：</b>毛利率偏低品項需確認是否為初次配合之試單折讓或特規價格協議。
-
+   • <b>續購待出貨追蹤：</b>名單中已有第二張訂單但尚未出貨之客戶（共 ${bkd['已下單待出貨']||data.pendingShipCount||0} 戶），請業務確認排產進度與交期，確保能如期完成實際出貨轉為正式續購。<br>
+   • <b>7 日回訪追蹤：</b>請業務主管安排 7 日內回訪尚未續購之新客，逐戶確認第二次採購需求與預計日期。<br>
+   • <b>採購週期確認：</b>90 日以上未續購者（共 ${bkd['90日以上']||0} 戶），由業務主管確認是否屬一次性裝潢專案、設備換新或常態採購週期偏長，不直接認定為客戶流失。
   </div>
-
  </div>`;
-
 }
-
-
 
 function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus,sortMode,selectedBranch){
-
  const dormSource=(typeof DORMANT_CUSTOMER_DRILLDOWN!=='undefined'?DORMANT_CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.DORMANT_CUSTOMER_DRILLDOWN:null));
-
- if(!dormSource||!dormSource.customers){
-
-  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;"><div class="warn">暫無久未交易舊客下鑽資料。</div></div>`;
-
+ if(!dormSource){
+  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;"><div class="warn">暫無久未交易客戶下鑽資料。</div></div>`;
  }
 
- const curBranch = selectedBranch || currentDormantBranch || '全部';
+ window.currentDormantViewMode = window.currentDormantViewMode || 'baseline';
+ const isDynamic = (window.currentDormantViewMode === 'dynamic');
 
+ const mkey = (drillMonth && drillMonth >= '2026-10') ? drillMonth : (picker && picker.value && picker.value >= '2026-10' ? picker.value.slice(0,7) : '2026-10');
+ let activePool = dormSource;
+ if(dormSource.modes){
+  if(isDynamic){
+   activePool = dormSource.modes.dynamic[mkey] || dormSource.modes.dynamic['default'] || dormSource;
+  } else {
+   activePool = dormSource.modes.baseline[mkey] || dormSource.modes.baseline['default'] || dormSource;
+  }
+ }
+
+ const curBranch = selectedBranch || currentDormantBranch || '全';
  const is6mFocus = (curBranch === '6m_focus');
-
  const activeBranches = normalizeBranchInput(selectedBranch || currentDormantBranches);
-
  const branchBtnsHtml = renderMultiRegionSelectorHtml('dorm-modal', activeBranches, { is6mFocus: (is6mFocus || currentDormantIs6m) });
 
- const targetDorm = getMergedDormantData(dormSource, activeBranches, (is6mFocus || currentDormantIs6m));
+ const allCusts = activePool.customers || [];
+ const filtered = (activeBranches.length === 5)
+  ? allCusts
+  : allCusts.filter(c => activeBranches.includes(c.branch || REGION_TO_BRANCH[c.region]));
 
+ const totalCount = filtered.length;
+ const histTotalNet = filtered.reduce((sum, c) => sum + (c.histNet || 0), 0);
+ const histTotalMargin = filtered.reduce((sum, c) => sum + (c.histMargin || 0), 0);
+ const histTotalGm = histTotalNet ? Number((histTotalMargin / histTotalNet * 100).toFixed(2)) : 0;
 
+ const sb = activePool.statusBreakdown || {};
+ const c2m = filtered.filter(c => c.tierStatus && c.tierStatus.includes('2')).length;
+ const c34m = filtered.filter(c => c.tierStatus && c.tierStatus.includes('3')).length;
+ const c5m = filtered.filter(c => c.tierStatus && c.tierStatus.includes('5')).length;
+ const c6m = filtered.filter(c => c.tierStatus && c.tierStatus.includes('6')).length;
+ const cReturned = filtered.filter(c => c.hasNewOrders).length;
+ const cPending = filtered.filter(c => c.hasPendingOrder && !c.hasNewOrders).length;
+ const cStillDormant = totalCount - cReturned - cPending;
 
- const cutoffStr=cutoffDate?(cutoffDate.slice(5,7)+'/'+cutoffDate.slice(8,10)):'09/13';
+ const activeFilter = filterStatus || '全部';
+ const activeSort = sortMode || 'csv';
 
- const tagTitle=(mode==='ytd')?`2026 YTD 累計｜訂單截至 ${cutoffStr}`: `${Number((drillMonth||'2026-08').slice(5))} 月管理月口徑`;
-
- const activeFilter=filterStatus||'全部';
-
- const activeSort=sortMode||'csv';
-
- const branchLabel = targetDorm ? targetDorm.scopeNote : '五大區合計';
-
-
-
- let periodWarnHtml='';
-
- if(mode==='day'||mode==='week'){
-
-  periodWarnHtml=`<div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
-
-   <b>查核提醒：</b>久未交易追蹤以月／YTD 週期檢核為宜；日／週模式維持呈現 8/25 正式基準 268 戶清單與截至目前最新交易動態。
-
+ // View switcher HTML
+ const viewSwitcherHtml = `
+  <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;background:#f8fafc;padding:10px 14px;border-radius:10px;border:1px solid #cbd5e1;">
+   <div style="display:flex;align-items:center;gap:10px;">
+    <span style="font-size:13px;font-weight:bold;color:#1e293b;">📊 久未交易分析視圖：</span>
+    <div style="display:inline-flex;border-radius:8px;border:1px solid #0284c7;overflow:hidden;">
+     <button type="button" onclick="window.currentDormantViewMode='baseline';if(typeof openImprove==='function')openImprove('dormant-customer');" style="padding:6px 14px;font-size:12px;cursor:pointer;border:none;background:${isDynamic?'#fff':'#0284c7'};color:${isDynamic?'#0284c7':'#fff'};font-weight:${isDynamic?'normal':'bold'};">
+      📌 8/25 基準名單追蹤 (固定 268 戶)
+     </button>
+     <button type="button" onclick="window.currentDormantViewMode='dynamic';if(typeof openImprove==='function')openImprove('dormant-customer');" style="padding:6px 14px;font-size:12px;cursor:pointer;border:none;border-left:1px solid #0284c7;background:${isDynamic?'#0284c7':'#fff'};color:${isDynamic?'#fff':'#0284c7'};font-weight:${isDynamic?'bold':'normal'};">
+      🔄 全體客戶動態分級 (截至所選日)
+     </button>
+    </div>
+   </div>
+   <div style="font-size:12px;color:#64748b;">
+    ${isDynamic ? '💡 動態視圖：依當前查詢日向後推算全公司所有客戶距最後實際出貨日之天數' : '💡 基準視圖：追蹤 8/25 會議核定之 268 戶基準名單之實際出貨回流成效'}
+   </div>
   </div>`;
 
- } else {
-
-  periodWarnHtml=`<div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
-
-   <b>核定口徑說明：</b>以 8/25 CSV 正式基準 268 戶為固定母體（含 5 大分區對齊，排除現銷）；8/25 基準分級維持保留，不隨新單改寫。8/25 後有新單者（共 ${targetDorm.withNewOrdersCount} 戶）客觀標示「基準日後有新增交易」，由業務主管線下核定採購性質，不逕判為全面回流。預設依 CSV 既有優先序排列。
-
+ const warnHtml = isDynamic ? `
+  <div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
+   <b>全體客戶動態久未交易分析（基準日：${activePool.snapshotDate || cutoffDate}）：</b>依當前查詢截止日向後推算全公司所有交易客戶距最後實際出貨日之天數，分為 2 個月（60–89日）、3–4 個月（90–149日）、5 個月（150–179日）與 6 個月以上（180日以上）。<br>
+   <span style="color:#b45309;font-weight:bold;">⚠️ 待出貨說明：</span>久未交易客戶若已有新訂單待出貨，客觀獨立標示為「久未交易｜已重新下單待出貨」，不直接判定為回流出貨。名單中原屬 8/25 基準之客戶沿用巧展原定 5 級評級；其餘新進入客戶標示為「優先等級待確認」。
+  </div>` : `
+  <div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
+   <b>8/25 基準 268 戶沉睡客戶追蹤（截至 ${activePool.cutoffDate || cutoffDate}）：</b>以 8/25 CSV 核定 268 戶為固定基準（排除桃H，含現銷），追蹤基準日後之實際出貨回流成效。所選範圍內已回流出貨 <b>${cReturned} 戶</b>；已重新下單待出貨 <b>${cPending} 戶</b>（已有新單尚未出貨，不計入回流）；持續未交易 <b>${cStillDormant} 戶</b>（全公司出貨回流率 ${activePool.returnRate || (totalCount ? Math.round(cReturned/totalCount*1000)/10 : 0)}%）。
   </div>`;
 
- }
-
-
-
- const postOrdersSum=targetDorm.customers.reduce((acc,c)=>acc+c.newOrders,0);
-
- const sb=targetDorm.statusBreakdown||{};
-
- const c2m=sb['2個月未下單']||0;
-
- const c34m=sb['3–4個月未下單']||sb['3至4個月未下單']||0;
-
- const c5m=sb['5個月未下單']||sb['半年以內未交易']||0;
-
- const c6m=sb['6個月以上未下單']||sb['半年以上未交易']||0;
-
-
-
- // 動態計算 6 個月以上各分區分布戶數（不寫死台北23、桃園20、新竹6、台南2、大圖1）
-
- const regOrder = ['台北', '桃園', '新竹', '台南', '大圖'];
-
- const reg6mCounts = {};
-
- regOrder.forEach(r => reg6mCounts[r] = 0);
-
- (dormSource.customers || []).filter(c => c.baseMonths >= 6).forEach(c => {
-
-   if(reg6mCounts[c.branch] !== undefined) reg6mCounts[c.branch]++;
-
- });
-
- const reg6mBreakdownText = regOrder.map(r => `${r} ${reg6mCounts[r]}`).join('、');
-
-
-
- const kpiCardsHtml=`
-
+ const kpisHtml = !isDynamic ? `
+  <div class="kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;">
+   <div class="kpi" style="padding:10px;">
+    <small>8/25 基準追蹤客戶</small>
+    <b style="font-size:22px;color:#153e72;">${totalCount} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">固定 268 戶母體不變</div>
+   </div>
+   <div class="kpi" style="padding:10px;">
+    <small>歷史出貨總額</small>
+    <b style="font-size:22px;color:#b45309;">${money(histTotalNet)}</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">毛利 ${money(histTotalMargin)} (${histTotalGm}%)</div>
+   </div>
+   <div class="kpi" style="padding:10px;">
+    <small>基準日後已回流出貨</small>
+    <b style="font-size:22px;color:#16a34a;">${cReturned} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">依實際出貨認定回流</div>
+   </div>
+   <div class="kpi" style="padding:10px;">
+    <small>已重新下單待出貨</small>
+    <b style="font-size:22px;color:#ea580c;">${cPending} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">已有新訂單尚未出貨</div>
+   </div>
+   <div class="kpi" style="padding:10px;">
+    <small>持續未再交易</small>
+    <b style="font-size:22px;color:#64748b;">${cStillDormant} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">持續關懷名單</div>
+   </div>
+  </div>` : `
   <div class="kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px;">
-
    <div class="kpi" style="padding:10px;">
-
-    <small>${is6mFocus?'6 個月以上重點追蹤':(curBranch==='全部'?'久未交易基準客戶':'【'+curBranch+'】基準客戶')}</small>
-
-    <b style="font-size:22px;color:#153e72;">${targetDorm.totalCount} 戶</b>
-
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">${is6mFocus?`跨區集中 ${targetDorm.totalCount} 戶名單`:(curBranch==='全部'?'8/19 盤點 242 戶｜8/25 正式 268 戶':'5大分區標準歸屬')}</div>
-
+    <small>動態久未交易客戶</small>
+    <b style="font-size:22px;color:#153e72;">${totalCount} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">全體交易客戶距今動態分級</div>
    </div>
-
    <div class="kpi" style="padding:10px;">
-
-    <small>基準歷史總淨額</small>
-
-    <b style="font-size:22px;color:#b45309;">${money(targetDorm.histTotalNet)}</b>
-
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">毛利 ${money(targetDorm.histTotalMargin)} (${targetDorm.histTotalGm}%)</div>
-
+    <small>歷史出貨總額</small>
+    <b style="font-size:22px;color:#b45309;">${money(histTotalNet)}</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">毛利 ${money(histTotalMargin)} (${histTotalGm}%)</div>
    </div>
-
    <div class="kpi" style="padding:10px;">
-
-    <small>基準日後有新增交易</small>
-
-    <b style="font-size:22px;color:#16805a;">${targetDorm.withNewOrdersCount} 戶</b>
-
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">新增 ${postOrdersSum} 單 (${money(targetDorm.withNewOrdersNet)})</div>
-
+    <small>久未交易｜已下單待出貨</small>
+    <b style="font-size:22px;color:#ea580c;">${cPending} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">已有新訂單尚未出貨</div>
    </div>
-
    <div class="kpi" style="padding:10px;">
-
-    <small>2 個月未下單</small>
-
-    <b style="font-size:22px;color:#153e72;">${c2m} 戶</b>
-
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">未下單 61–90 天</div>
-
+    <small>6 個月以上未出貨</small>
+    <b style="font-size:22px;color:#dc2626;">${c6m} 戶</b>
+    <div style="font-size:11px;color:#6f7783;margin-top:2px;">重點關注長期未交易客群</div>
    </div>
+  </div>`;
 
-   <div class="kpi" style="padding:10px;">
-
-    <small>3–4 個月未下單</small>
-
-    <b style="font-size:22px;color:#d97706;">${c34m} 戶</b>
-
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">未下單 92–152 天</div>
-
+ const tierCardsHtml = `
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px;">
+   <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;text-align:center;">
+    <div style="font-size:11px;color:#64748b;">${isDynamic ? '2 個月未出貨 (60–89日)' : '2 個月未下單'}</div>
+    <div style="font-size:18px;font-weight:bold;color:#1e293b;margin-top:2px;">${c2m} 戶</div>
    </div>
-
-   <div class="kpi" style="padding:10px;">
-
-    <small>5 個月未下單</small>
-
-    <b style="font-size:22px;color:#cf3f49;">${c5m} 戶</b>
-
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">未下單 153–182 天</div>
-
+   <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;text-align:center;">
+    <div style="font-size:11px;color:#64748b;">${isDynamic ? '3–4 個月未出貨 (90–149日)' : '3–4 個月未下單'}</div>
+    <div style="font-size:18px;font-weight:bold;color:#1e293b;margin-top:2px;">${c34m} 戶</div>
    </div>
-
-   <div class="kpi" style="padding:10px;">
-
-    <small>6 個月以上未下單</small>
-
-    <b style="font-size:22px;color:#991b1b;">${c6m} 戶</b>
-
-    <div style="font-size:11px;color:#6f7783;margin-top:2px;">未下單 183 天以上</div>
-
+   <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;text-align:center;">
+    <div style="font-size:11px;color:#64748b;">${isDynamic ? '5 個月未出貨 (150–179日)' : '5 個月未下單'}</div>
+    <div style="font-size:18px;font-weight:bold;color:#1e293b;margin-top:2px;">${c5m} 戶</div>
    </div>
+   <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;text-align:center;">
+    <div style="font-size:11px;color:#dc2626;">${isDynamic ? '6 個月以上未出貨 (180日以上)' : '6 個月以上未下單'}</div>
+    <div style="font-size:18px;font-weight:bold;color:#dc2626;margin-top:2px;">${c6m} 戶</div>
+   </div>
+  </div>`;
 
-  </div>
-
- `;
-
-
-
- const filterTabs=[
-
-  {key:'全部',label:`全部 (${targetDorm.totalCount})`},
-
-  {key:'2個月',label:`2 個月 (${c2m})`},
-
-  {key:'3–4個月',label:`3–4 個月 (${c34m})`},
-
-  {key:'5個月',label:`5 個月 (${c5m})`},
-
-  {key:'6個月以上',label:`6 個月以上 (${c6m})`},
-
-  {key:'基準後有新單',label:`基準日後有新增交易 (${targetDorm.withNewOrdersCount})`}
-
+ const filterTabs = !isDynamic ? [
+  {key:'全部', label:`全部 (${totalCount})`},
+  {key:'已回流出貨', label:`已回流出貨 (${cReturned})`},
+  {key:'已重新下單待出貨', label:`已重新下單待出貨 (${cPending})`},
+  {key:'持續未交易', label:`持續未交易 (${cStillDormant})`},
+  {key:'6m', label:`6 個月以上 (${c6m})`}
+ ] : [
+  {key:'全部', label:`全部 (${totalCount})`},
+  {key:'已重新下單待出貨', label:`已重新下單待出貨 (${cPending})`},
+  {key:'2m', label:`2 個月 (${c2m})`},
+  {key:'34m', label:`3–4 個月 (${c34m})`},
+  {key:'5m', label:`5 個月 (${c5m})`},
+  {key:'6m', label:`6 個月以上 (${c6m})`}
  ];
 
+ const filterTabsHtml = `
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+   ${filterTabs.map(t => {
+     const isAct = (t.key === activeFilter);
+     return `<button type="button" class="dorm-filter-tab ${isAct?'active':''}" data-dorm-filter="${esc(t.key)}" style="padding:5px 10px;font-size:11px;font-weight:bold;border-radius:8px;border:1px solid ${isAct?'#0284c7':'#cbd8e7'};background:${isAct?'#0284c7':'#fff'};color:${isAct?'#fff':'#0284c7'};cursor:pointer;">${esc(t.label)}</button>`;
+   }).join(' ')}
+  </div>`;
 
-
- const tabsHtml=filterTabs.map(t=>{
-
-  const isAct=(t.key===activeFilter);
-
-  return `<button type="button" class="status-tab ${isAct?'active':''}" data-dorm-filter="${esc(t.key)}" style="padding:5px 10px;font-size:11px;font-weight:bold;border-radius:8px;border:1px solid ${isAct?'#153e72':'#cbd8e7'};background:${isAct?'#153e72':'#fff'};color:${isAct?'#fff':'#153e72'};cursor:pointer;">${esc(t.label)}</button>`;
-
- }).join(' ');
-
-
-
- const sortControlHtml=`
-
-  <div style="display:flex;align-items:center;gap:6px;font-size:11px;">
-
-   <span style="color:#4a5568;font-weight:600;">排序：</span>
-
-   <button type="button" class="sort-btn ${activeSort==='csv'?'active':''}" data-dorm-sort="csv" style="padding:4px 8px;font-size:11px;border-radius:6px;border:1px solid ${activeSort==='csv'?'#153e72':'#cbd8e7'};background:${activeSort==='csv'?'#153e72':'#fff'};color:${activeSort==='csv'?'#fff':'#153e72'};cursor:pointer;">CSV 既有優先序 (1–268)</button>
-
-   <button type="button" class="sort-btn ${activeSort==='net'?'active':''}" data-dorm-sort="net" style="padding:4px 8px;font-size:11px;border-radius:6px;border:1px solid ${activeSort==='net'?'#153e72':'#cbd8e7'};background:${activeSort==='net'?'#153e72':'#fff'};color:${activeSort==='net'?'#fff':'#153e72'};cursor:pointer;">依歷史淨額降序</button>
-
-  </div>
-
- `;
-
-
-
- let filtered=[...targetDorm.customers];
-
- if(activeFilter==='2個月'){
-
-  filtered=filtered.filter(c=>c.tierStatus==='2 個月未下單'||c.baseMonths===2);
-
- }else if(activeFilter==='3–4個月'){
-
-  filtered=filtered.filter(c=>c.tierStatus==='3–4 個月未下單'||(c.baseMonths>=3&&c.baseMonths<=4));
-
- }else if(activeFilter==='5個月'||activeFilter==='半年以內'){
-
-  filtered=filtered.filter(c=>c.tierStatus==='5 個月未下單'||c.tierStatus==='半年以內未交易'||c.baseMonths===5);
-
- }else if(activeFilter==='6個月以上'||activeFilter==='半年以上'){
-
-  filtered=filtered.filter(c=>c.tierStatus==='6 個月以上未下單'||c.tierStatus==='半年以上未交易'||c.baseMonths>=6);
-
- }else if(activeFilter==='基準後有新單'){
-
-  filtered=filtered.filter(c=>c.hasNewOrders);
-
+ let displayCusts = [...filtered];
+ if(activeFilter === '已回流出貨' || activeFilter === 'returned'){
+  displayCusts = displayCusts.filter(c => c.hasNewOrders);
+ } else if(activeFilter === '已重新下單待出貨' || activeFilter === 'pending'){
+  displayCusts = displayCusts.filter(c => c.hasPendingOrder && !c.hasNewOrders);
+ } else if(activeFilter === '持續未交易' || activeFilter === 'still_dormant'){
+  displayCusts = displayCusts.filter(c => !c.hasNewOrders && !c.hasPendingOrder);
+ } else if(activeFilter === '6m'){
+  displayCusts = displayCusts.filter(c => c.tierStatus && c.tierStatus.includes('6'));
+ } else if(activeFilter === '2m'){
+  displayCusts = displayCusts.filter(c => c.tierStatus && c.tierStatus.includes('2'));
+ } else if(activeFilter === '34m'){
+  displayCusts = displayCusts.filter(c => c.tierStatus && c.tierStatus.includes('3'));
+ } else if(activeFilter === '5m'){
+  displayCusts = displayCusts.filter(c => c.tierStatus && c.tierStatus.includes('5'));
  }
 
+ const rowsHtml = displayCusts.length ? displayCusts.map((c, i) => {
+  let tierColor = '#64748b';
+  let tierBg = '#f1f5f9';
+  if(c.csvTier && c.csvTier.includes('最高優先')){ tierColor = '#dc2626'; tierBg = '#fef2f2'; }
+  else if(c.csvTier && c.csvTier.includes('優先關懷')){ tierColor = '#ea580c'; tierBg = '#fff7ed'; }
+  else if(c.csvTier && c.csvTier.includes('次要追蹤')){ tierColor = '#0284c7'; tierBg = '#f0f9ff'; }
+  else if(c.csvTier && c.csvTier.includes('新客觀察')){ tierColor = '#7c3aed'; tierBg = '#faf5ff'; }
+  else if(c.csvTier && c.csvTier.includes('低優先')){ tierColor = '#64748b'; tierBg = '#f1f5f9'; }
+  else if(c.csvTier && c.csvTier.includes('待確認')){ tierColor = '#b45309'; tierBg = '#fefce8'; }
 
-
- if(activeSort==='net'){
-
-  filtered.sort((a,b)=>b.histNet-a.histNet);
-
- }else{
-
-  filtered.sort((a,b)=>a.csvRank-b.csvRank);
-
- }
-
-
-
- const tableRowsHtml=filtered.length?filtered.map(c=>{
-
-  let tierStyle='background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;';
-
-  if(c.csvTier==='最高優先'){
-
-   tierStyle='background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;font-weight:bold;';
-
-  }else if(c.csvTier==='優先關懷'){
-
-   tierStyle='background:#ffedd5;color:#9a3412;border:1px solid #fdba74;font-weight:600;';
-
-  }else if(c.csvTier==='次要追蹤'){
-
-   tierStyle='background:#fef9c3;color:#854d0e;border:1px solid #fde047;';
-
-  }else if(c.csvTier==='新客觀察(首購後回購)'){
-
-   tierStyle='background:#e0f2fe;color:#075985;border:1px solid #7dd3fc;';
-
-  }
-
-
-
-  let baseStatusStyle='background:#edf4fb;color:#2d6fb2;border:1px solid #cbd8e7;';
-
-  const tierName = (c.baseMonths === 2) ? '2 個月未下單' : (c.baseMonths >= 3 && c.baseMonths <= 4) ? '3–4 個月未下單' : (c.baseMonths === 5) ? '5 個月未下單' : (c.baseMonths >= 6) ? '6 個月以上未下單' : (c.tierStatus || c.baseStatus);
-
-  if(c.baseMonths>=3&&c.baseMonths<=4){
-
-   baseStatusStyle='background:#fff5e9;color:#ad6518;border:1px solid #f3d0a7;';
-
-  }else if(c.baseMonths===5){
-
-   baseStatusStyle='background:#fff0f1;color:#cf3f49;border:1px solid #ffd2d5;';
-
-  }else if(c.baseMonths>=6){
-
-   baseStatusStyle='background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;font-weight:bold;';
-
-  }
-
-
-
-  let dynamicBadge='';
-
+  let statusHtml = '';
   if(c.hasNewOrders){
-
-   dynamicBadge=`<span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;line-height:1.35;white-space:normal;background:#eaf7f1;color:#16805a;border:1px solid #cbe8da;font-weight:600;">基準日後有新增交易 (${c.newOrders} 單)</span>`;
-
-  }else{
-
-   dynamicBadge=`<span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;line-height:1.35;white-space:normal;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;">基準分類保留</span>`;
-
+   statusHtml = `<span style="background:#eaf7f1;color:#16805a;font-weight:bold;font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid #cbe8da;">已回流出貨 (${c.newOrders}單 / ${money(c.newNet)})</span>`;
+  } else if(c.hasPendingOrder){
+   const pCount = (c.pendingOrders||[]).length || 1;
+   statusHtml = `<span style="background:#fff7ed;color:#c2410c;font-weight:bold;font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid #fed7aa;">已重新下單待出貨 (${pCount}單待出)</span>`;
+  } else {
+   statusHtml = `<span style="color:#64748b;font-size:11px;">${esc(c.dynamicStatus || '未再交易（持續追蹤）')}</span>`;
   }
-
-
-
-  const postOrdersText=c.hasNewOrders?`<span style="color:#16805a;font-weight:bold;">${c.newOrders} 單 (${money(c.newNet)})</span>`:`<span style="color:#94a3b8;">-</span>`;
-
-  const gmStr=(c.histGm!=null&&!isNaN(c.histGm))?`${c.histGm.toFixed(2)}%`:'-';
-
-
-
-  if(is6mFocus){
-
-   return `<tr>
-
-    <td style="width:58px;white-space:nowrap;font-weight:bold;color:#153e72;">${esc(c.branch||'-')}</td>
-
-    <td style="width:58px;white-space:nowrap;">${esc(c.region||'-')}</td>
-
-    <td style="min-width:140px;font-weight:600;word-break:break-all;">${esc(c.name)}</td>
-
-    <td style="width:82px;white-space:nowrap;">${esc(c.baseLastDate||'-')}</td>
-
-    <td class="num" style="width:68px;white-space:nowrap;color:#991b1b;font-weight:bold;">${c.baseMonths} 個月</td>
-
-    <td class="num" style="width:64px;white-space:nowrap;">${c.baseDays} 天</td>
-
-    <td style="width:82px;white-space:nowrap;">${esc(c.latestOrderDate||c.baseLastDate||'-')}</td>
-
-    <td class="num" style="width:72px;white-space:nowrap;font-weight:bold;color:#153e72;">${money(c.histNet)}</td>
-
-    <td class="num" style="width:68px;white-space:nowrap;">${money(c.histMargin)}</td>
-
-    <td style="width:110px;min-width:96px;line-height:1.35;">${dynamicBadge}</td>
-
-   </tr>`;
-
-  }
-
-
 
   return `<tr>
-
-   <td class="num" style="font-weight:bold;color:#153e72;white-space:nowrap;">${c.csvRank}</td>
-
-   <td style="white-space:nowrap;font-weight:bold;color:#153e72;">${esc(c.branch||'-')}</td>
-
-   <td style="white-space:nowrap;">${esc(c.region||'-')}</td>
-
-   <td style="white-space:nowrap;"><span style="display:inline-block;padding:2px 6px;border-radius:999px;font-size:10px;white-space:nowrap;${tierStyle}">${esc(c.csvTier)}</span></td>
-
-   <td style="font-weight:600;white-space:nowrap;">${esc(c.name)}</td>
-
-   <td style="white-space:nowrap;"><span style="display:inline-block;padding:2px 6px;border-radius:999px;font-size:10px;white-space:nowrap;${baseStatusStyle}">${esc(tierName)}</span></td>
-
-   <td style="white-space:nowrap;">${esc(c.baseLastDate)} <span style="color:#6f7783;font-size:10px;">(${c.baseDays}天 / ${c.baseMonths}個月)</span></td>
-
-   <td class="num" style="font-weight:bold;color:#153e72;white-space:nowrap;">${money(c.histNet)}</td>
-
-   <td class="num" style="white-space:nowrap;">${gmStr}</td>
-
-   <td class="num" style="white-space:nowrap;">${postOrdersText}</td>
-
-   <td style="white-space:nowrap;">${esc(c.latestOrderDate||c.baseLastDate)}</td>
-
-   <td style="white-space:nowrap;">${dynamicBadge}</td>
-
+   <td style="text-align:center;color:#64748b;">${c.csvRank || (i+1)}</td>
+   <td style="text-align:center;"><span style="color:${tierColor};background:${tierBg};font-weight:bold;font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid ${tierColor}33;">${c.csvTier || '-'}</span></td>
+   <td><b>${esc(c.name)}</b></td>
+   <td style="text-align:center;">${esc(c.branch || c.region || '-')}</td>
+   <td style="text-align:center;">${esc(c.salesRep || '-')}</td>
+   <td>${esc(c.tierStatus || '-')}</td>
+   <td style="text-align:center;">${esc(c.baseLastDate || '-')}</td>
+   <td class="num">${c.baseDays != null ? c.baseDays + ' 天' : '-'}</td>
+   <td class="num">${money(c.histNet || 0)}</td>
+   <td class="num">${c.histGm != null ? c.histGm + '%' : '-'}</td>
+   <td style="text-align:center;">${statusHtml}</td>
   </tr>`;
-
- }).join(''):`<tr><td colspan="${is6mFocus?10:12}" style="text-align:center;color:#6f7783;padding:16px;">所選狀態（${esc(activeFilter)}）無符合客戶。</td></tr>`;
-
-
-
- const tableHeadersHtml = is6mFocus ? `
-
-  <tr>
-
-   <th style="width:58px;white-space:nowrap;">所屬大區</th>
-
-   <th style="width:58px;white-space:nowrap;">業務區域</th>
-
-   <th style="min-width:140px;">客戶名稱</th>
-
-   <th style="width:82px;white-space:nowrap;">基準最後交易日</th>
-
-   <th class="num" style="width:68px;white-space:nowrap;">未交易月數</th>
-
-   <th class="num" style="width:64px;white-space:nowrap;">未交易天數</th>
-
-   <th style="width:82px;white-space:nowrap;">最新交易日</th>
-
-   <th class="num" style="width:72px;white-space:nowrap;">歷史淨額</th>
-
-   <th class="num" style="width:68px;white-space:nowrap;">歷史毛利</th>
-
-   <th style="width:110px;min-width:96px;">目前既有追蹤／回流狀態</th>
-
-  </tr>
-
- ` : `
-
-  <tr>
-
-   <th class="num" style="width:40px;white-space:nowrap;">優先序</th>
-
-   <th style="white-space:nowrap;">所屬大區</th>
-
-   <th style="white-space:nowrap;">業務區域</th>
-
-   <th style="white-space:nowrap;">優先等級</th>
-
-   <th style="white-space:nowrap;">客戶名稱</th>
-
-   <th style="white-space:nowrap;">8/25 基準分級</th>
-
-   <th style="white-space:nowrap;">基準最後交易日</th>
-
-   <th class="num" style="white-space:nowrap;">基準歷史淨額</th>
-
-   <th class="num" style="white-space:nowrap;">歷史毛利率</th>
-
-   <th class="num" style="white-space:nowrap;">8/25 後新增交易</th>
-
-   <th style="white-space:nowrap;">最新交易日</th>
-
-   <th style="white-space:nowrap;">目前既有追蹤／回流狀態</th>
-
-  </tr>
-
- `;
-
-
-
- // 動態取得階層統計數字（不寫死 10 戶、27 戶、37 戶）
-
- const tHighest = (targetDorm.tierBreakdown && targetDorm.tierBreakdown['最高優先']) || targetDorm.customers.filter(c => c.csvTier === '最高優先').length;
-
- const tCare = (targetDorm.tierBreakdown && targetDorm.tierBreakdown['優先關懷']) || targetDorm.customers.filter(c => c.csvTier === '優先關懷').length;
-
- const tKeySum = tHighest + tCare;
-
-
+ }).join('') : '<tr><td colspan="11" style="text-align:center;color:#6f7783;padding:16px;">所選條件下無客戶記錄</td></tr>';
 
  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">
-
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-
-   <h3 style="margin:0;font-size:15px;color:#102b50;">05B 舊客追蹤｜久未交易客戶名單與動態（${esc(branchLabel)}）</h3>
-
-   <span class="tag blue" style="font-size:11px;">${esc(tagTitle)}</span>
-
-  </div>
-
+  ${viewSwitcherHtml}
+  ${warnHtml}
+  ${kpisHtml}
+  ${tierCardsHtml}
   ${branchBtnsHtml}
-
-  ${periodWarnHtml}
-
-  ${kpiCardsHtml}
-
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-
-   <div style="display:flex;gap:6px;flex-wrap:wrap;">${tabsHtml}</div>
-
-   ${sortControlHtml}
-
+  ${filterTabsHtml}
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-top:12px;">
+   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <h4 style="margin:0;font-size:13px;color:#153e72;">
+     ${isDynamic ? `全體動態久未交易客戶名單（共 ${displayCusts.length} 戶）` : `8/25 基準沉睡客戶追蹤名單（共 ${displayCusts.length} 戶）`}
+    </h4>
+   </div>
+   <div style="max-height:480px;overflow-y:auto;border:1px solid #f1f5f9;border-radius:6px;">
+    <table style="width:100%;font-size:12px;border-collapse:collapse;">
+     <thead style="position:sticky;top:0;background:#f8fafc;border-bottom:1px solid #cbd5e1;">
+      <tr>
+       <th style="padding:6px;width:40px;text-align:center;">序號</th>
+       <th style="padding:6px;width:70px;text-align:center;">優先級</th>
+       <th style="padding:6px;">客戶名稱</th>
+       <th style="padding:6px;width:60px;text-align:center;">區域</th>
+       <th style="padding:6px;width:60px;text-align:center;">業務</th>
+       <th style="padding:6px;">未交易分段</th>
+       <th style="padding:6px;width:85px;text-align:center;">最後出貨日</th>
+       <th class="num" style="padding:6px;width:70px;">距今天數</th>
+       <th class="num" style="padding:6px;width:80px;">歷史營收</th>
+       <th class="num" style="padding:6px;width:60px;">毛利率</th>
+       <th style="padding:6px;width:150px;text-align:center;">當前動態狀態</th>
+      </tr>
+     </thead>
+     <tbody>${rowsHtml}</tbody>
+    </table>
+   </div>
   </div>
-
-  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;overflow-x:auto;">
-
-   <table style="width:100%;font-size:11px;min-width:${is6mFocus?740:1020}px;border-collapse:collapse;">
-
-    <thead>${tableHeadersHtml}</thead>
-
-    <tbody>${tableRowsHtml}</tbody>
-
-   </table>
-
-  </div>
-
-  <div class="callout" style="margin-top:14px;font-size:12px;line-height:1.7;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;">
-
-   <b>待主管確認項目（線下客情與管理處置）：</b><br>
-
-   • <b>新增交易性質核定：</b>${targetDorm.withNewOrdersCount} 戶於 8/25 基準日後有新增交易（累計 ${postOrdersSum} 單、金額 ${money(targetDorm.withNewOrdersNet)}）。因 ERP 無客戶拜訪紀錄與專案進度，需由業務主管線下逐戶核對是屬常態回流採購、一次性應急加單或零星補料，系統不自動判定為全面回流。<br>
-
-   • <b>高貢獻舊客優先拜訪：</b>最高優先（${tHighest} 戶）與優先關懷（${tCare} 戶）合計 ${tKeySum} 戶，占久未交易客戶主要營收比重，應優先排定拜訪，確認未下單原因（正常週期偏長、裝潢專案結束、窗口異動或轉向競品）。<br>
-
-   • <b>基準口徑對齊：</b>8/19 會議紀錄之 242 戶為現場人工盤點清單；8/25 CSV 正式匯出名單為 268 戶（已排除現銷，含完整未下單天數與歷史淨額），兩者因盤點截止時間與篩選條件不同而有差額，另有 2 筆客戶名稱／代碼匹配待確認，本系統以 268 戶正式資料為準。<br>
-
-   • <b>區域分析範圍說明：</b>區域分析範圍為台北、桃園、新竹、台南及大圖；分公司與桃H不納入區域分析。各客戶於分區資料中仍各自歸屬於其分區（${reg6mBreakdownText}），「6 個月以上重點追蹤」為跨區集中篩選視圖。
-
-  </div>
-
  </div>`;
-
 }
 
-
-
 function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilter, currentSort, expandedOrder, selectedBranch){
-
   const shipSource = (typeof window !== 'undefined' && window.UNSHIPPED_DRILLDOWN) ? (window.UNSHIPPED_DRILLDOWN[mode]?.[drillMonth] || window.UNSHIPPED_DRILLDOWN['month']?.[drillMonth] || window.UNSHIPPED_DRILLDOWN['month']?.['2026-09']) : null;
-
-  if(!shipSource || !shipSource.summary){
-
+  if (!shipSource || (!shipSource.summary && !shipSource.orders && !shipSource.ordersList)) {
     return `<div class="warn" style="margin-top:14px">目前所選期間（${esc(drillMonth)}）尚無完工未出貨訂單明細資料。</div>`;
-
   }
 
   const activeBranches = normalizeBranchInput(selectedBranch || currentShipBranches);
-
   const branchBtnsHtml = renderMultiRegionSelectorHtml('ship-modal', activeBranches);
-
   const mergedShip = getMergedUnshippedData(shipSource, activeBranches);
-
   const s = mergedShip.summary;
-
   const rawList = mergedShip.ordersList || [];
-
-
+  const anomaliesList = mergedShip.deliveryAnomalies || [];
 
   const filterVal = currentFilter || '全部';
-
   let filtered = rawList;
-
-  if(filterVal === '零金額'){
-
-    filtered = rawList.filter(o => o.isZero);
-
-  } else if(filterVal === '逾預計出貨日'){
-
+  if (filterVal === '完工未出金額為零') {
+    filtered = rawList.filter(o => o.completedUnshippedAmt === 0 || o.isZero);
+  } else if (filterVal === '含零額工單') {
+    filtered = rawList.filter(o => o.zeroAmountWorkOrderCount > 0 || (o.items && o.items.some(it => it.isCompletedUnshippedWO && it.net === 0)));
+  } else if (filterVal === '逾預計出貨日') {
     filtered = rawList.filter(o => o.isOverdue);
-
-  } else if(filterVal !== '全部'){
-
+  } else if (filterVal === '交期異常待查') {
+    // 異常清單由專屬 10 欄表格呈現
+  } else if (filterVal !== '全部') {
     filtered = rawList.filter(o => o.waitRange === filterVal);
-
   }
 
-
-
   const sortVal = currentSort || 'wait';
-
   filtered = [...filtered].sort((a, b) => {
-
-    if(sortVal === 'net'){
-
-      return (b.net - a.net) || (b.waitDays - a.waitDays);
-
+    if (sortVal === 'completed') {
+      return ((b.completedUnshippedAmt || 0) - (a.completedUnshippedAmt || 0)) || ((b.waitDays || 0) - (a.waitDays || 0));
     }
-
-    return (b.waitDays - a.waitDays) || (b.net - a.net);
-
+    if (sortVal === 'pending') {
+      return ((b.totalOrderPendingAmt || b.pendingUnshippedAmt || 0) - (a.totalOrderPendingAmt || a.pendingUnshippedAmt || 0)) || ((b.waitDays || 0) - (a.waitDays || 0));
+    }
+    if (sortVal === 'net') {
+      return ((b.orderTotalNet || 0) - (a.orderTotalNet || 0)) || ((b.waitDays || 0) - (a.waitDays || 0));
+    }
+    return ((b.waitDays || 0) - (a.waitDays || 0)) || ((b.completedUnshippedAmt || 0) - (a.completedUnshippedAmt || 0));
   });
 
-
-
-  const unfinModalWarn = (drillMonth >= '2026-10' || !shipSource.isOfficialSnapshot) ? `
-
-  <div class="warn" style="margin-bottom:12px;background:#fff8e6;border:1px solid #ffd591;padding:10px 14px;border-radius:8px;font-size:12px;color:#873800;">
-
-    <b>⚠️ 資料限制說明：</b>本期（10月進行中）數據係基於增量訂單與歷史母體重建之候選清單。因分週匯出檔未包含 10/12 前歷史單據之最新出貨狀態回寫，舊單若於 10/12 後出貨仍可能在此顯示為未出貨，無法作為官方期末定案快照，僅供進行中追蹤參考；官方定案快照請以 9 月管理月（截至 9/25，已核定 573 單／1,328 筆明細）為準。
-
-  </div>` : '';
-
-  const kpiCardsHtml = unfinModalWarn + `
-
+  const kpiCardsHtml = `
   <div class="kpis" style="margin-bottom:12px;">
-
     <div class="kpi">
-
-      <small>未出貨訂單</small>
-
-      <b class="blue">${fmt(s.orders)} 單</b>
-
+      <small>完工未出貨訂單 / 工單</small>
+      <b class="blue">${fmt(s.orders)} 單 / ${fmt(s.completedUnshippedWorkOrders)} 工單</b>
       <div class="note">明細 ${fmt(s.lines)} 筆｜涵蓋客戶 ${fmt(s.customers)} 戶</div>
-
     </div>
-
     <div class="kpi">
-
-      <small>未出貨淨額</small>
-
-      <b class="blue">${money(s.totalNet)}</b>
-
-      <div class="note">未出貨總成本 ${money(s.totalCost)}</div>
-
+      <small>完工未出金額 (主KPI)</small>
+      <b class="blue">${money(s.completedUnshippedAmt)}</b>
+      <div class="note">整單待出總額 ${money(s.totalOrderPendingAmt)}</div>
     </div>
-
     <div class="kpi">
-
-      <small>逾預計出貨日</small>
-
-      <b class="red">${fmt(s.overdueOrders)} 單</b>
-
-      <div class="note">佔未出貨訂單 ${s.overdueRate}%（待業務追蹤）</div>
-
+      <small>最長等待天數</small>
+      <b class="orange">${s.maxWaitDays} 天</b>
+      <div class="note">平均等待 ${s.avgWaitDays} 天</div>
     </div>
-
     <div class="kpi">
-
-      <small>零金額訂單（待確認）</small>
-
-      <b class="orange">${fmt(s.zeroOrders)} 單</b>
-
-      <div class="note">已發生成本 ${money(s.zeroCost)}｜佔 ${s.zeroRate}%</div>
-
+      <small>零淨額工單（待確認計價方式）</small>
+      <b class="orange">${fmt(s.zeroWorkOrders)} 張</b>
+      <div class="note">含零額工單之訂單 ${fmt(s.hasZeroWorkOrdersCount)} 單</div>
     </div>
-
   </div>`;
-
-
 
   const calloutHtml = `
-
   <div class="callout" style="margin-top:10px;margin-bottom:14px;font-size:12px;line-height:1.7;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;">
-
-    • <b>非零金額訂單毛利分析：</b>非零金額共 <b>${fmt(s.nonZeroOrders)} 單</b>，訂單淨額 <b>${money(s.nonZeroNet)}</b>，毛利 <b>${money(s.nonZeroMargin)}</b>，毛利率 <b>${s.nonZeroGm}%</b>。<br>
-
-    • <b>零金額案件說明：</b>${s.zeroOrders} 單零金額訂單因淨額為 0 且發生成本 ${money(s.zeroCost)}（毛利 -${money(s.zeroCost).replace('元','')}元），本系統依核定口徑不將其負毛利混入主要毛利 KPI，避免誤導；建議出貨窗口與業務逐單確認樣品、贈品或建單單價。<br>
-
-    • <b>等待天數說明：</b>訂單層級等待天數採「<b>最早完工日起等待天數</b>」，截至查詢日最長等待 <b>${s.maxWaitDays} 天</b>，平均等待 <b>${s.avgWaitDays} 天</b>。
-
+    • <b>第四階段 Option B 工單判定原則：</b>納入標準為「工單完工日 ≤ 基準日」、「截至基準日未完成出貨」且「有效交件日 ≤ 基準日」。工單若未完工或交件日未到，不計入完工未出貨主指標。<br>
+    • <b>雙重金額指標：</b>主指標「完工未出金額」為符合 Option B 條件之工單淨額合計（<b>${money(s.completedUnshippedAmt)}</b>）；輔助指標「整單待出金額」為訂單內所有未出貨品項合計（<b>${money(s.totalOrderPendingAmt)}</b>）。<br>
+    • <b>等待天數與零額處理：</b>訂單層級等待天數採最早完工日起算（最長 <b>${s.maxWaitDays} 天</b>，平均 <b>${s.avgWaitDays} 天</b>）；工單層級依各自完工日起算。保留零淨額工單（<b>${s.zeroWorkOrders} 張</b>）供業務與廠務核對計價方式。
   </div>`;
-
-
 
   const filters = [
-
     { key: '全部', label: `全部 (${s.orders})` },
-
     { key: '0–7日', label: `0–7 日 (${s.rangeBreakdown['0–7日']||0})` },
-
     { key: '8–30日', label: `8–30 日 (${s.rangeBreakdown['8–30日']||0})` },
-
     { key: '31–60日', label: `31–60 日 (${s.rangeBreakdown['31–60日']||0})` },
-
     { key: '61–90日', label: `61–90 日 (${s.rangeBreakdown['61–90日']||0})` },
-
     { key: '90日以上', label: `90 日以上 (${s.rangeBreakdown['90日以上']||0})` },
-
-    { key: '零金額', label: `零金額案件 (${s.zeroOrders})` },
-
-    { key: '逾預計出貨日', label: `逾預計出貨日 (${s.overdueOrders})` }
-
+    { key: '完工未出金額為零', label: `完工未出金額為零 (${s.zeroOrders})` },
+    { key: '含零額工單', label: `含零額工單 (${s.hasZeroWorkOrdersCount})` },
+    { key: '逾預計出貨日', label: `逾預計出貨日 (${s.overdueOrders})` },
+    { key: '交期異常待查', label: `交期異常待查 (${s.deliveryAnomalyCount})` }
   ];
 
-
-
   const filterBtnsHtml = filters.map(f => {
-
     const isAct = (f.key === filterVal);
-
     return `<button type="button" class="ship-filter-btn" data-ship-filter="${esc(f.key)}" style="padding:4px 10px;font-size:12px;border-radius:14px;border:1px solid ${isAct?'#153e72':'#cbd8e7'};background:${isAct?'#153e72':'#fff'};color:${isAct?'#fff':'#153e72'};cursor:pointer;font-weight:${isAct?'bold':'normal'};">${f.label}</button>`;
-
   }).join('');
-
-
 
   const sortControlHtml = `
-
   <div style="display:flex;align-items:center;gap:6px;">
-
     <span style="font-size:12px;color:#64748b;">排序：</span>
-
-    <button type="button" class="ship-sort-btn" data-ship-sort="wait" style="padding:4px 8px;font-size:12px;border-radius:6px;border:1px solid ${sortVal==='wait'?'#153e72':'#cbd8e7'};background:${sortVal==='wait'?'#153e72':'#fff'};color:${sortVal==='wait'?'#fff':'#153e72'};cursor:pointer;">最早完工日起等待天數（降序）</button>
-
-    <button type="button" class="ship-sort-btn" data-ship-sort="net" style="padding:4px 8px;font-size:12px;border-radius:6px;border:1px solid ${sortVal==='net'?'#153e72':'#cbd8e7'};background:${sortVal==='net'?'#153e72':'#fff'};color:${sortVal==='net'?'#fff':'#153e72'};cursor:pointer;">訂單淨額（降序）</button>
-
+    <button type="button" class="ship-sort-btn" data-ship-sort="wait" style="padding:4px 8px;font-size:12px;border-radius:6px;border:1px solid ${sortVal==='wait'?'#153e72':'#cbd8e7'};background:${sortVal==='wait'?'#153e72':'#fff'};color:${sortVal==='wait'?'#fff':'#153e72'};cursor:pointer;">最早完工等待（降序）</button>
+    <button type="button" class="ship-sort-btn" data-ship-sort="completed" style="padding:4px 8px;font-size:12px;border-radius:6px;border:1px solid ${sortVal==='completed'?'#153e72':'#cbd8e7'};background:${sortVal==='completed'?'#153e72':'#fff'};color:${sortVal==='completed'?'#fff':'#153e72'};cursor:pointer;">完工未出金額（降序）</button>
+    <button type="button" class="ship-sort-btn" data-ship-sort="pending" style="padding:4px 8px;font-size:12px;border-radius:6px;border:1px solid ${sortVal==='pending'?'#153e72':'#cbd8e7'};background:${sortVal==='pending'?'#153e72':'#fff'};color:${sortVal==='pending'?'#fff':'#153e72'};cursor:pointer;">整單待出金額（降序）</button>
+    <button type="button" class="ship-sort-btn" data-ship-sort="net" style="padding:4px 8px;font-size:12px;border-radius:6px;border:1px solid ${sortVal==='net'?'#153e72':'#cbd8e7'};background:${sortVal==='net'?'#153e72':'#fff'};color:${sortVal==='net'?'#fff':'#153e72'};cursor:pointer;">訂單總額（降序）</button>
   </div>`;
 
+  let mainContentHtml = '';
 
-
-  const tableRowsHtml = filtered.map(o => {
-
-    const isExp = (expandedOrder === o.orderNo);
-
-    let badgeHtml = '';
-
-    if(o.isZero){
-
-      badgeHtml = `<span class="badge" style="background:#fff7ed;color:#c2410c;border:1px solid #ffedd5;padding:2px 6px;border-radius:4px;font-size:10px;">零金額（待確認）</span>`;
-
-    } else if(o.isOverdue){
-
-      badgeHtml = `<span class="badge" style="background:#fef2f2;color:#b91c1c;border:1px solid #fee2e2;padding:2px 6px;border-radius:4px;font-size:10px;">逾預計日（待確認）</span>`;
-
+  if (filterVal === '交期異常待查') {
+    // 獨立交期異常待查表：嚴格 10 欄
+    let anomalyRowsHtml = '';
+    if (anomaliesList.length === 0) {
+      anomalyRowsHtml = `<tr><td colspan="10" style="text-align:center;padding:24px;color:#64748b;">目前無交期異常資料（全部工單交件日均合規）</td></tr>`;
     } else {
-
-      badgeHtml = `<span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:2px 6px;border-radius:4px;font-size:10px;">正常等待</span>`;
-
-    }
-
-
-
-    let subTableHtml = '';
-
-    if(isExp && o.items && o.items.length){
-
-      const itemRows = o.items.map(it => `
-
-        <tr style="background:#f8fafc;border-bottom:1px dashed #cbd5e1;">
-
-          <td style="padding:4px 8px;font-family:monospace;">${esc(it.workOrder||'-')}</td>
-
-          <td style="padding:4px 8px;">${esc(it.itemNo||'-')}</td>
-
-          <td style="padding:4px 8px;">${esc(it.itemName||'-')}</td>
-
-          <td style="padding:4px 8px;">${esc(it.category||'')}/${esc(it.subCategory||'')}</td>
-
-          <td class="num" style="padding:4px 8px;">${fmt(it.qty)} ${esc(it.unit||'')}</td>
-
-          <td class="num" style="padding:4px 8px;">${money(it.net)}</td>
-
-          <td class="num" style="padding:4px 8px;">${money(it.cost)}</td>
-
-          <td class="num" style="padding:4px 8px;">${money(it.margin)}</td>
-
-          <td style="padding:4px 8px;">${esc(it.compDate||'-')}</td>
-
-          <td style="padding:4px 8px;">${esc(it.expDate||'-')}</td>
-
+      anomalyRowsHtml = anomaliesList.map(a => `
+        <tr style="border-bottom:1px solid #f1f5f9;">
+          <td style="font-family:monospace;white-space:nowrap;padding:6px 8px;">${esc(a.orderNo)}</td>
+          <td style="font-family:monospace;white-space:nowrap;padding:6px 8px;">${esc(a.workOrder)}</td>
+          <td style="white-space:nowrap;font-weight:bold;padding:6px 8px;">${esc(a.custName)}</td>
+          <td style="white-space:nowrap;padding:6px 8px;">${esc(a.region)}</td>
+          <td style="white-space:nowrap;padding:6px 8px;">${esc(a.sales)}</td>
+          <td style="white-space:nowrap;padding:6px 8px;">${esc(a.compDate || '-')}</td>
+          <td style="white-space:nowrap;padding:6px 8px;color:#b91c1c;">${esc(a.origExpDate || '-')}</td>
+          <td class="num" style="white-space:nowrap;padding:6px 8px;">${fmt(a.qty)}</td>
+          <td class="num" style="white-space:nowrap;padding:6px 8px;font-weight:bold;">${money(a.net)}</td>
+          <td style="white-space:nowrap;padding:6px 8px;color:#c2410c;font-weight:bold;">${esc(a.anomalyReason || '交期異常')}</td>
         </tr>
-
       `).join('');
-
-      subTableHtml = `
-
-      <tr style="background:#f1f5f9;">
-
-        <td colspan="10" style="padding:10px 14px;">
-
-          <div style="font-weight:bold;font-size:11px;color:#1e293b;margin-bottom:6px;">工單與產品明細（共 ${o.items.length} 筆）：</div>
-
-          <table style="width:100%;font-size:11px;border-collapse:collapse;background:#fff;border:1px solid #cbd5e1;border-radius:6px;">
-
-            <thead>
-
-              <tr style="background:#e2e8f0;color:#334155;">
-
-                <th style="padding:4px 8px;">工單單號</th>
-
-                <th style="padding:4px 8px;">品號</th>
-
-                <th style="padding:4px 8px;">品名</th>
-
-                <th style="padding:4px 8px;">大類／中類</th>
-
-                <th class="num" style="padding:4px 8px;">數量與單位</th>
-
-                <th class="num" style="padding:4px 8px;">淨額</th>
-
-                <th class="num" style="padding:4px 8px;">成本</th>
-
-                <th class="num" style="padding:4px 8px;">毛利</th>
-
-                <th style="padding:4px 8px;">完工日期</th>
-
-                <th style="padding:4px 8px;">預計出貨日</th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>${itemRows}</tbody>
-
-          </table>
-
-        </td>
-
-      </tr>`;
-
     }
 
+    mainContentHtml = `
+    <div style="overflow-x:auto;border:1px solid #cbd5e1;border-radius:6px;">
+      <table style="width:100%;font-size:12px;border-collapse:collapse;background:#fff;">
+        <thead>
+          <tr style="background:#fee2e2;color:#991b1b;border-bottom:2px solid #fca5a5;">
+            <th style="padding:6px 8px;white-space:nowrap;">訂單單號</th>
+            <th style="padding:6px 8px;white-space:nowrap;">工單單號</th>
+            <th style="padding:6px 8px;white-space:nowrap;">客戶名稱</th>
+            <th style="padding:6px 8px;white-space:nowrap;">業務區域</th>
+            <th style="padding:6px 8px;white-space:nowrap;">負責業務</th>
+            <th style="padding:6px 8px;white-space:nowrap;">完工日期</th>
+            <th style="padding:6px 8px;white-space:nowrap;">原始交件日</th>
+            <th class="num" style="padding:6px 8px;white-space:nowrap;">訂購數量</th>
+            <th class="num" style="padding:6px 8px;white-space:nowrap;">工單淨額</th>
+            <th style="padding:6px 8px;white-space:nowrap;">異常原因</th>
+          </tr>
+        </thead>
+        <tbody>${anomalyRowsHtml}</tbody>
+      </table>
+    </div>`;
+  } else {
+    // 訂單主表：嚴格 12 欄（第6欄為「完工工單數」）；工單子表：嚴格 16 欄 (colspan="12")
+    const tableRowsHtml = filtered.map(o => {
+      const isExp = (expandedOrder === o.orderNo);
+      let badgeHtml = '';
+      if (o.completedUnshippedAmt === 0) {
+        badgeHtml = `<span class="badge" style="background:#fff7ed;color:#c2410c;border:1px solid #ffedd5;padding:2px 6px;border-radius:4px;font-size:10px;">零完工額</span>`;
+      } else if (o.isOverdue) {
+        badgeHtml = `<span class="badge" style="background:#fef2f2;color:#b91c1c;border:1px solid #fee2e2;padding:2px 6px;border-radius:4px;font-size:10px;">逾預計日</span>`;
+      } else {
+        badgeHtml = `<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:2px 6px;border-radius:4px;font-size:10px;">完工未出</span>`;
+      }
+      if (o.zeroAmountWorkOrderCount > 0) {
+        badgeHtml += ` <span class="badge" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;padding:2px 5px;border-radius:4px;font-size:10px;">含零額工單</span>`;
+      }
 
+      let subTableHtml = '';
+      if (isExp && o.items && o.items.length) {
+        const itemRows = o.items.map(it => {
+          let stBadge = '';
+          if (it.isCompletedUnshippedWO) {
+            stBadge = `<span class="badge" style="background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">★ 主KPI合格</span>`;
+          } else if (it.status === '已出貨') {
+            stBadge = `<span class="badge" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:1px 5px;border-radius:3px;font-size:10px;">已出貨</span>`;
+          } else if (it.status === '未完工') {
+            stBadge = `<span class="badge" style="background:#fffbeb;color:#b45309;border:1px solid #fde68a;padding:1px 5px;border-radius:3px;font-size:10px;">未完工</span>`;
+          } else {
+            stBadge = `<span class="badge" style="background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;padding:1px 5px;border-radius:3px;font-size:10px;">${esc(it.status || '非工單/待查')}</span>`;
+          }
 
-    return `
+          // 防護三：工單等待天數為 0 時，必須顯示為「0 天」，不得顯示為「-」
+          const waitStr = (it.waitDays !== null && it.waitDays !== undefined) ? `${it.waitDays} 天` : '-';
+          const remQtyVal = (it.remQty != null) ? it.remQty : Math.max(0, (it.qty || 0) - (it.shippedQty || 0));
 
-    <tr style="border-bottom:1px solid #f1f5f9;cursor:pointer;background:${isExp?'#f0fdf4':'transparent'};" data-ship-expand="${esc(o.orderNo)}">
+          return `
+          <tr style="background:#f8fafc;border-bottom:1px dashed #cbd5e1;">
+            <td style="padding:4px 8px;text-align:center;">${stBadge}</td>
+            <td style="padding:4px 8px;font-family:monospace;">${esc(it.workOrder || '-')}</td>
+            <td style="padding:4px 8px;">${esc(it.itemNo || '-')}</td>
+            <td style="padding:4px 8px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(it.itemName || '')}">${esc(it.itemName || '-')}</td>
+            <td style="padding:4px 8px;">${esc(it.category || '')}/${esc(it.subCategory || '')}</td>
+            <td class="num" style="padding:4px 8px;">${fmt(it.qty)} ${esc(it.unit || '')}</td>
+            <td class="num" style="padding:4px 8px;color:${it.shippedQty > 0 ? '#166534' : '#64748b'};">${fmt(it.shippedQty || 0)} ${esc(it.unit || '')}</td>
+            <td class="num" style="padding:4px 8px;">${fmt(remQtyVal)} ${esc(it.unit || '')}</td>
+            <td class="num" style="padding:4px 8px;font-weight:bold;">${money(it.net)}</td>
+            <td class="num" style="padding:4px 8px;color:#1d4ed8;font-weight:bold;">${money(it.pendingAmt)}</td>
+            <td class="num" style="padding:4px 8px;">${money(it.cost)}</td>
+            <td class="num" style="padding:4px 8px;">${money(it.margin)}</td>
+            <td style="padding:4px 8px;">${esc(it.compDate || '-')}</td>
+            <td style="padding:4px 8px;">${esc(it.expDate || '-')}</td>
+            <td class="num" style="padding:4px 8px;font-weight:bold;">${waitStr}</td>
+            <td style="padding:4px 8px;">${esc(it.actShipDate || '-')}</td>
+          </tr>`;
+        }).join('');
 
-      <td style="font-family:monospace;white-space:nowrap;">
+        subTableHtml = `
+        <tr style="background:#f1f5f9;">
+          <td colspan="12" style="padding:10px 14px;">
+            <div style="font-weight:bold;font-size:11px;color:#1e293b;margin-bottom:6px;">📦 訂單全品項明細（共 ${o.items.length} 筆工單／品項）：</div>
+            <table style="width:100%;font-size:11px;border-collapse:collapse;background:#fff;border:1px solid #cbd5e1;border-radius:6px;">
+              <thead>
+                <tr style="background:#e2e8f0;color:#334155;">
+                  <th style="padding:4px 8px;text-align:center;">品項狀態與資格</th>
+                  <th style="padding:4px 8px;">工單單號</th>
+                  <th style="padding:4px 8px;">品號</th>
+                  <th style="padding:4px 8px;">品名規格</th>
+                  <th style="padding:4px 8px;">大類／中類</th>
+                  <th class="num" style="padding:4px 8px;">訂購數量</th>
+                  <th class="num" style="padding:4px 8px;">已出貨量</th>
+                  <th class="num" style="padding:4px 8px;">待出數量</th>
+                  <th class="num" style="padding:4px 8px;">工單淨額</th>
+                  <th class="num" style="padding:4px 8px;color:#1d4ed8;">品項待出金額</th>
+                  <th class="num" style="padding:4px 8px;">成本</th>
+                  <th class="num" style="padding:4px 8px;">毛利</th>
+                  <th style="padding:4px 8px;">完工日期</th>
+                  <th style="padding:4px 8px;">預計出貨日</th>
+                  <th class="num" style="padding:4px 8px;">工單等待</th>
+                  <th style="padding:4px 8px;">實際出貨日</th>
+                </tr>
+              </thead>
+              <tbody>${itemRows}</tbody>
+            </table>
+          </td>
+        </tr>`;
+      }
 
-        <button type="button" style="background:none;border:none;cursor:pointer;color:#1d4ed8;text-decoration:underline;font-family:inherit;font-size:inherit;padding:0;">
+      const woCount = o.completedUnshippedWorkOrderCount != null ? o.completedUnshippedWorkOrderCount : (o.items ? o.items.filter(it => it.isCompletedUnshippedWO).length : 0);
 
-          ${isExp?'▼':'▶'} ${esc(o.orderNo)} <span style="font-size:10px;color:#64748b;font-weight:normal;">(${o.linesCount}筆)</span>
+      return `
+      <tr style="border-bottom:1px solid #f1f5f9;cursor:pointer;background:${isExp?'#f0fdf4':'transparent'};" data-ship-expand="${esc(o.orderNo)}">
+        <td style="font-family:monospace;white-space:nowrap;padding:6px 8px;">
+          <button type="button" style="background:none;border:none;cursor:pointer;color:#1d4ed8;text-decoration:underline;font-family:inherit;font-size:inherit;padding:0;">
+            ${isExp?'▼':'▶'} ${esc(o.orderNo)} <span style="font-size:10px;color:#64748b;font-weight:normal;">(${o.linesCount}筆)</span>
+          </button>
+        </td>
+        <td style="white-space:nowrap;font-weight:bold;padding:6px 8px;">${esc(o.custName)}</td>
+        <td style="white-space:nowrap;padding:6px 8px;">${esc(o.region)}</td>
+        <td style="white-space:nowrap;padding:6px 8px;">${esc(o.sales)}</td>
+        <td style="white-space:nowrap;padding:6px 8px;">${esc(o.earliestCompDate || '-')}</td>
+        <td class="num" style="white-space:nowrap;padding:6px 8px;font-weight:bold;">${woCount} 張</td>
+        <td class="num" style="white-space:nowrap;font-weight:bold;padding:6px 8px;color:${(o.waitDays||0)>30?'#b91c1c':((o.waitDays||0)>7?'#c2410c':'#334155')};">${o.waitDays||0} 天</td>
+        <td style="white-space:nowrap;padding:6px 8px;color:${o.isOverdue?'#b91c1c':'#334155'};">${esc(o.expectedShipDate||'-')}</td>
+        <td class="num" style="white-space:nowrap;font-weight:bold;padding:6px 8px;">${money(o.orderTotalNet != null ? o.orderTotalNet : o.net)}</td>
+        <td class="num" style="white-space:nowrap;font-weight:bold;padding:6px 8px;color:#1d4ed8;">${money(o.completedUnshippedAmt != null ? o.completedUnshippedAmt : 0)}</td>
+        <td class="num" style="white-space:nowrap;padding:6px 8px;">${money(o.totalOrderPendingAmt != null ? o.totalOrderPendingAmt : (o.pendingUnshippedAmt != null ? o.pendingUnshippedAmt : 0))}</td>
+        <td style="white-space:nowrap;text-align:center;padding:6px 8px;">${badgeHtml}</td>
+      </tr>
+      ${subTableHtml}`;
+    }).join('');
 
-        </button>
-
-      </td>
-
-      <td style="white-space:nowrap;font-weight:bold;">${esc(o.custName)}</td>
-
-      <td style="white-space:nowrap;">${esc(o.region)}</td>
-
-      <td style="white-space:nowrap;">${esc(o.sales)}</td>
-
-      <td style="white-space:nowrap;">${esc(o.earliestCompDate)}</td>
-
-      <td class="num" style="white-space:nowrap;font-weight:bold;color:${o.waitDays>30?'#b91c1c':(o.waitDays>7?'#c2410c':'#334155')};">${o.waitDays} 天</td>
-
-      <td style="white-space:nowrap;color:${o.isOverdue?'#b91c1c':'#334155'};">${esc(o.expectedShipDate||'-')}</td>
-
-      <td class="num" style="white-space:nowrap;font-weight:bold;">${money(o.net)}</td>
-
-      <td class="num" style="white-space:nowrap;">${money(o.margin)}</td>
-
-      <td style="white-space:nowrap;">${badgeHtml}</td>
-
-    </tr>
-
-    ${subTableHtml}`;
-
-  }).join('');
-
-
+    mainContentHtml = `
+    <div style="overflow-x:auto;border:1px solid #cbd5e1;border-radius:6px;">
+      <table style="width:100%;font-size:12px;border-collapse:collapse;background:#fff;">
+        <thead>
+          <tr style="background:#e2e8f0;color:#334155;border-bottom:2px solid #cbd5e1;">
+            <th style="padding:6px 8px;white-space:nowrap;">訂單單號</th>
+            <th style="padding:6px 8px;white-space:nowrap;">客戶名稱</th>
+            <th style="padding:6px 8px;white-space:nowrap;">業務區域</th>
+            <th style="padding:6px 8px;white-space:nowrap;">負責業務</th>
+            <th style="padding:6px 8px;white-space:nowrap;">最早完工日</th>
+            <th class="num" style="padding:6px 8px;white-space:nowrap;">完工工單數</th>
+            <th class="num" style="padding:6px 8px;white-space:nowrap;">等待天數</th>
+            <th style="padding:6px 8px;white-space:nowrap;">預計出貨日</th>
+            <th class="num" style="padding:6px 8px;white-space:nowrap;">訂單總額</th>
+            <th class="num" style="padding:6px 8px;white-space:nowrap;color:#1d4ed8;">完工未出金額</th>
+            <th class="num" style="padding:6px 8px;white-space:nowrap;">整單待出金額</th>
+            <th style="padding:6px 8px;white-space:nowrap;text-align:center;">狀態標籤</th>
+          </tr>
+        </thead>
+        <tbody>${tableRowsHtml}</tbody>
+      </table>
+    </div>`;
+  }
 
   return `
-
-  <div class="shipment-drilldown-panel" style="margin-top:14px;">
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-
-      <h3 style="margin:0;font-size:15px;color:#153e72;">06 完工未出貨｜訂單維度分析與待確認清單</h3>
-
-      <span style="font-size:12px;color:#64748b;">快照截止日：${esc(cutoffDate)}（已排除現銷）</span>
-
-    </div>
-
+  <div class="modal-body-section" style="padding:12px 16px;">
+    ${branchBtnsHtml}
     ${kpiCardsHtml}
-
     ${calloutHtml}
-
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
       <div style="display:flex;gap:6px;flex-wrap:wrap;">${filterBtnsHtml}</div>
-
       ${sortControlHtml}
-
     </div>
-
-    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;overflow-x:auto;">
-
-      <table style="width:100%;font-size:11px;min-width:900px;border-collapse:collapse;">
-
-        <thead>
-
-          <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
-
-            <th style="white-space:nowrap;">訂單單號</th>
-
-            <th style="white-space:nowrap;">客戶名稱</th>
-
-            <th style="white-space:nowrap;">區域</th>
-
-            <th style="white-space:nowrap;">業務</th>
-
-            <th style="white-space:nowrap;">最早完工日</th>
-
-            <th class="num" style="white-space:nowrap;">等待天數（最早完工日起算）</th>
-
-            <th style="white-space:nowrap;">預計出貨日</th>
-
-            <th class="num" style="white-space:nowrap;">訂單淨額</th>
-
-            <th class="num" style="white-space:nowrap;">訂單毛利</th>
-
-            <th style="white-space:nowrap;">狀態標示</th>
-
-          </tr>
-
-        </thead>
-
-        <tbody>${tableRowsHtml || '<tr><td colspan="10" style="text-align:center;padding:20px;color:#94a3b8;">此條件下無未出貨訂單。</td></tr>'}</tbody>
-
-      </table>
-
-    </div>
-
-    <div class="note" style="margin-top:10px;font-size:11px;color:#64748b;line-height:1.5;">
-
-      <b>解讀提醒：</b>0–7／8–30／31–60／61–90／90+ 僅為客觀「等待天數區間」，不得自動當作異常嚴重度判定。零金額案件僅標示需確認，不自行判定為漏價、樣品或異常。
-
-    </div>
-
+    ${mainContentHtml}
   </div>`;
-
 }
-
-
 
 function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, expandedMajor, expandedMinor, selectedBranch){
 
@@ -6460,7 +5785,7 @@ function renderProductDrilldownHtml(mode, drillMonth, cutoffDate, currentSort, e
 
             <th class="num" style="white-space:nowrap;">毛利率</th>
 
-            <th class="num" style="white-space:nowrap;">與五大區平均差</th>
+            <th class="num" style="white-space:nowrap;">與全公司同類毛利率差距</th>
 
             <th class="num" style="white-space:nowrap;">訂單數</th>
 
@@ -6584,47 +5909,55 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
 
 
+ const isMatOnlyTab = (activeTab === 'clients');
+
+ const targetObj = isMatOnlyTab ? cur : (curComb || cur);
+
+ const titlePrefix = isMatOnlyTab ? '物料' : '整合';
+
  const kpiSectionHtml=`
 
   <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:16px;">
 
     <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
 
-      <div style="font-size:12px;color:#64748b;">東澤範圍訂購數量</div>
+      <div style="font-size:12px;color:#64748b;">東澤${titlePrefix}訂購需求</div>
 
-      <div style="font-size:22px;font-weight:bold;color:#153e72;margin:4px 0;">${fmt(cur.totalQty)} <span style="font-size:14px;">片</span></div>
+      <div style="font-size:22px;font-weight:bold;color:#153e72;margin:4px 0;">${fmt(targetObj.placedQty ?? targetObj.totalQty ?? 0)} <span style="font-size:14px;">片</span></div>
 
-      <div style="font-size:11px;color:#64748b;">明細 ${fmt(cur.lineCount)} 筆｜訂單 ${fmt(cur.orderCount)} 單</div>
-
-    </div>
-
-    <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
-
-      <div style="font-size:12px;color:#64748b;">東澤分析範圍淨額</div>
-
-      <div style="font-size:22px;font-weight:bold;color:#153e72;margin:4px 0;">${money(cur.totalNet)}</div>
-
-      <div style="font-size:11px;color:#64748b;">交易客戶 ${cur.customerCount} 戶｜總額 ${money(cur.totalGross)}</div>
+      <div style="font-size:11px;color:#64748b;">明細 ${fmt(targetObj.lineCount ?? 0)} 筆｜訂單 ${fmt(targetObj.orderCount ?? 0)} 單</div>
 
     </div>
 
     <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
 
-      <div style="font-size:12px;color:#64748b;">毛利額與毛利率</div>
+      <div style="font-size:12px;color:#64748b;">東澤${titlePrefix}出貨營收</div>
 
-      <div style="font-size:22px;font-weight:bold;color:#16805a;margin:4px 0;">${money(cur.totalMargin)}</div>
+      <div style="font-size:22px;font-weight:bold;color:#153e72;margin:4px 0;">${money(targetObj.totalNet ?? 0)}</div>
 
-      <div style="font-size:11px;color:#64748b;">毛利率 <b style="color:#d97706;">${cur.totalGm!=null?cur.totalGm.toFixed(2)+'%':'-'}</b>｜成本 ${money(cur.totalCost)}</div>
+      <div style="font-size:11px;color:#64748b;">出貨客戶 ${targetObj.shippedCustomers ?? targetObj.customerCount ?? 0} 戶｜總額 ${money(targetObj.totalGross ?? targetObj.totalNet ?? 0)}</div>
 
     </div>
 
     <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
 
-      <div style="font-size:12px;color:#64748b;">出貨進度（至 ${esc(cutoffDate)}）</div>
+      <div style="font-size:12px;color:#64748b;">${titlePrefix}出貨毛利與毛利率</div>
 
-      <div style="font-size:22px;font-weight:bold;color:#0284c7;margin:4px 0;">${fmt(cur.shippedQty)} <span style="font-size:14px;">片</span> <span style="font-size:14px;color:#64748b;">(${cur.shippedRate.toFixed(1)}%)</span></div>
+      <div style="font-size:22px;font-weight:bold;color:#16805a;margin:4px 0;">${money(targetObj.totalMargin ?? 0)}</div>
 
-      <div style="font-size:11px;color:#64748b;">出貨金額 ${money(cur.shippedNet)}｜待出貨 ${fmt(cur.totalQty-cur.shippedQty)} 片</div>
+      <div style="font-size:11px;color:#64748b;">毛利率 <b style="color:#d97706;">${targetObj.totalGm!=null?targetObj.totalGm.toFixed(2)+'%':'-'}</b>｜出貨成本 ${money(targetObj.totalCost ?? 0)}</div>
+
+    </div>
+
+    <div class="kpi-card" style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 14px;border-radius:8px;">
+
+      <div style="font-size:12px;color:#64748b;">${titlePrefix}當期實際出貨</div>
+
+      <div style="font-size:22px;font-weight:bold;color:#0284c7;margin:4px 0;">${fmt(targetObj.shippedQty ?? 0)} <span style="font-size:14px;">片</span></div>
+
+      <div style="font-size:11px;color:#64748b;margin-bottom:4px;">出貨營收 ${money(targetObj.shippedNet ?? targetObj.totalNet ?? 0)}｜待出貨 ${targetObj.unshippedOrders ? targetObj.unshippedOrders.length : 0} 單</div>
+
+      <div style="font-size:11px;color:#475569;border-top:1px dashed #cbd5e1;padding-top:4px;">同批訂單累積履約率：<b style="color:#0369a1;">${((targetObj.cohortFulfillmentRate ?? targetObj.shippedRate) ?? 0).toFixed(1)}%</b></div>
 
     </div>
 
@@ -6636,6 +5969,8 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
  const combCount=curComb?curComb.customerCount:(cur.clients.length);
 
+ const unshippedOrderCount = curComb ? (curComb.unshippedOrders ? curComb.unshippedOrders.length : 0) : (cur.unshippedOrders ? cur.unshippedOrders.length : 0);
+
  const tabs=[
 
   {key:'combined',label:`東澤整合全客戶排行 (${combCount} 戶)`},
@@ -6646,7 +5981,7 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
   {key:'clients',label:`物料客戶排行 (${cur.clients.length} 戶)`},
 
-  {key:'shipments',label:`待出貨追蹤 (${cur.unshippedOrders.length} 單待出貨)`}
+  {key:'shipments',label:`待出貨追蹤 (${unshippedOrderCount} 單待出貨)`}
 
  ];
 
@@ -6920,11 +6255,11 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
       <div style="font-size:18px;font-weight:bold;color:#153e72;margin-bottom:4px;">${money(r.net)}</div>
 
-      <div style="font-size:12px;color:#64748b;margin-bottom:8px;">毛利 ${money(r.margin)}｜毛利率 <b style="color:${r.gm<12?'#ea580c':'#16a34a'}">${r.gm.toFixed(2)}%</b></div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:8px;">毛利 ${money(r.margin)}｜毛利率 <b style="color:${r.gm!=null?(r.gm<12?'#ea580c':'#16a34a'):'#64748b'}">${r.gm!=null?r.gm.toFixed(2)+'%':'-'}</b></div>
 
       <div style="font-size:12px;color:#475569;margin-bottom:8px;border-top:1px dashed #e2e8f0;padding-top:6px;">
 
-        訂購 <b>${fmt(r.qty)}</b> 片｜已出貨 <b>${fmt(r.shippedQty)}</b> 片 (${r.shippedRate.toFixed(1)}%)
+        訂購 <b>${fmt(r.qty)}</b> 片｜已出貨 <b>${fmt(r.shippedQty)}</b> 片
 
       </div>
 
@@ -6954,7 +6289,7 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
       <td class="num">${fmt(r.shippedQty)} 片</td>
 
-      <td class="num" style="color:${r.shippedRate>=99?'#16a34a':'#0284c7'};font-weight:bold;">${r.shippedRate.toFixed(1)}%</td>
+      <td class="num" style="color:${r.shippedRate!=null?(r.shippedRate>=99?'#16a34a':'#0284c7'):'#64748b'};font-weight:bold;">${r.shippedRate!=null?r.shippedRate.toFixed(1)+'%':'-'}</td>
 
       <td class="num" style="font-weight:bold;color:#153e72;">${money(r.net)}</td>
 
@@ -6962,7 +6297,7 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
       <td class="num hide-mobile">${money(r.margin)}</td>
 
-      <td class="num" style="color:${r.gm<12?'#ea580c':'#16a34a'};font-weight:bold;">${r.gm.toFixed(2)}%</td>
+      <td class="num" style="color:${r.gm!=null?(r.gm<12?'#ea580c':'#16a34a'):'#64748b'};font-weight:bold;">${r.gm!=null?r.gm.toFixed(2)+'%':'-'}</td>
 
       <td class="num hide-mobile">${r.orderCount} 單</td>
 
@@ -6996,7 +6331,7 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
             <th class="num">已出貨數量</th>
 
-            <th class="num">出貨達成率</th>
+            <th class="num">同批履約率</th>
 
             <th class="num">訂單淨額</th>
 
@@ -7030,7 +6365,7 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
             <td class="num">${fmt(cur.shippedQty)} 片</td>
 
-            <td class="num">${cur.shippedRate.toFixed(1)}%</td>
+            <td class="num">${cur.shippedRate!=null?cur.shippedRate.toFixed(1)+'%':'-'}</td>
 
             <td class="num" style="color:#153e72;">${money(cur.totalNet)}</td>
 
@@ -7050,6 +6385,10 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
       </table>
 
+    </div>
+
+    <div style="font-size:11px;color:#64748b;margin-top:8px;">
+      備註：合計列「同批履約率」係追蹤當期下單明細截至基準日之同批累積履行率；各分區目前未提供獨立分區同批追蹤數值，故標示為「－」，不以當期出貨量除以訂購量替代。
     </div>
 
   `;
@@ -7392,7 +6731,7 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
  if(activeTab==='shipments'){
 
-  const unshippedList=cur.unshippedOrders||[];
+  const unshippedList=(curComb ? curComb.unshippedOrders : null) || cur.unshippedOrders || [];
 
 
 
@@ -7412,15 +6751,27 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
 
    const unshippedRows=unshippedList.map(o=>{
 
-    const statusTag=o.actualShipDate
+    const statusTag = o.statusCategory === 'mixed'
 
-      ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:11px;">晚於截止日出貨 (${esc(o.actualShipDate)})</span>`
+      ? `<span class="badge" style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;font-size:11px;">${esc(o.statusLabel || '部分未出貨、部分截止日後出貨')}</span>`
 
-      : (o.isOverdue
+      : (o.statusCategory === 'shipped_after_cutoff' || o.actualShipDate
 
-        ? '<span class="badge" style="background:#fef2f2;color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:11px;">逾預計出貨日</span>'
+        ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:11px;">${esc(o.statusLabel || `晚於截止日出貨 (${o.actualShipDate})`)}</span>`
 
-        : '<span class="badge" style="background:#f8fafc;color:#475569;padding:2px 6px;border-radius:4px;font-size:11px;">正常等待</span>');
+        : (o.statusCategory === 'still_unshipped'
+
+          ? (o.isOverdue
+
+            ? '<span class="badge" style="background:#fef2f2;color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:11px;">逾預計出貨日（未出貨）</span>'
+
+            : '<span class="badge" style="background:#f8fafc;color:#475569;padding:2px 6px;border-radius:4px;font-size:11px;">正常等待（未出貨）</span>')
+
+          : (o.isOverdue
+
+            ? '<span class="badge" style="background:#fef2f2;color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:11px;">逾預計出貨日</span>'
+
+            : '<span class="badge" style="background:#f8fafc;color:#475569;padding:2px 6px;border-radius:4px;font-size:11px;">正常等待</span>')));
 
 
 
@@ -8468,7 +7819,7 @@ function renderDongProductHtml(mode, drillMonth, cutoffDate, filterRegion='全�
 
  const drillMonth=d.drillMonth||d.customerMonth||d.newCustMonth||mgmtKey(summaryObj.s.end);
 
- const equipMonth=(typeof EQUIP!=='undefined'&&EQUIP[drillMonth])?drillMonth:'2026-08';
+ const equipMonth=(typeof EQUIP!=='undefined'&&EQUIP[drillMonth])?drillMonth:'2026-09';
 
  const cutoffDate=d.cutoffDate||summaryObj.s.end;
 

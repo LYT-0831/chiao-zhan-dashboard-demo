@@ -4284,13 +4284,15 @@ function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cut
  if (!effectiveRegions || !effectiveRegions.length) {
    effectiveRegions = getTargetRegionsData('2026-10', tView).map(r => r.region);
  }
- const reg = (selectedReg && (effectiveRegions.includes(selectedReg) || selectedReg === '桃H' || (drillPool[effectiveMk] && drillPool[effectiveMk][selectedReg]))) ? selectedReg : (effectiveRegions[0] || '桃A');
  const drillMode=(mode==='ytd')?'ytd':'month';
  const drillSource=(typeof REGIONAL_DRILLDOWN!=='undefined'?REGIONAL_DRILLDOWN:(typeof window!=='undefined'?window.REGIONAL_DRILLDOWN:null))||{};
  const drillPool=drillSource[drillMode]||{};
- const mk=drillMonth||(drillPool['2026-09']?'2026-09':(drillPool['2026-08']?'2026-08':Object.keys(drillPool)[0]));
- const effectiveMk=drillPool[mk]?mk:(drillPool['2026-09']?'2026-09':(drillPool['2026-08']?'2026-08':Object.keys(drillPool)[0]));
- const data=(drillPool[effectiveMk]&&drillPool[effectiveMk][reg])?drillPool[effectiveMk][reg]:null;
+ let effectiveMk=drillMonth||null;
+ if(mode==='ytd'&&(!effectiveMk||!drillPool[effectiveMk])&&cutoffDate&&drillPool[cutoffDate]){
+   effectiveMk=cutoffDate;
+ }
+ const reg = (selectedReg && (effectiveRegions.includes(selectedReg) || selectedReg === '桃H' || (effectiveMk && drillPool[effectiveMk] && drillPool[effectiveMk][selectedReg]))) ? selectedReg : (effectiveRegions[0] || '桃A');
+ const data=(effectiveMk && drillPool[effectiveMk] && drillPool[effectiveMk][reg])?drillPool[effectiveMk][reg]:null;
  
  const allCount = (targetMonth >= '2026-10') ? 21 : 20;
 
@@ -4326,14 +4328,13 @@ function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cut
 
  let specialNoteHtml = '';
   if (reg === '桃H') {
-    const periodDesc = (data && data.periodDesc)
-      ? data.periodDesc
-      : ((mode === 'ytd')
-        ? `自 2026/09/26 起追蹤之出貨累計（截至 ${(DYN?.sourcesMeta?.orders?.latest || '2026-11-10').replaceAll('-','/')}，1~9月出貨為0筆）`
-        : (drillMonth === '2026-11'
-          ? `依 2026/10/26～${(DYN?.sourcesMeta?.orders?.latest || '2026-11-10').replaceAll('-','/')} 實際出貨日口徑統計（未完整月）`
-          : '依 2026/09/26～2026/10/25 實際出貨日口徑統計，共 34 筆出貨明細'));
-    const erpRev = data ? data.totalNet : (mode === 'ytd' ? 1344118 : (drillMonth === '2026-11' ? 225890 : 1118228));
+    const hasDrillData = !!(data && data.totalNet != null);
+    const periodDesc = hasDrillData
+      ? (data.periodDesc || (data.period ? (mode === 'ytd' ? `自 2026/09/26 起追蹤之出貨累計（截至 ${data.period.split('~')[1]?.trim() || ''}，共 ${data.lineCount || 0} 筆出退明細）` : `依 ${data.period} 實際出貨日口徑統計，共 ${data.lineCount || 0} 筆出退明細`) : ''))
+      : '';
+    const erpRevHtml = hasDrillData
+      ? `${money(data.totalNet)}（來源：ERP 訂單「桃H」業務區域代碼${periodDesc ? `，${periodDesc}` : ''}）。兩者來源與口徑不同，各自獨立列示。`
+      : `此期間責任區明細尚未提供（來源：ERP 訂單「桃H」業務區域代碼）。兩者來源與口徑不同，各自獨立列示。`;
     const officialDesc = (drillMonth === '2026-11' || targetMonth !== drillMonth)
       ? `${money(regAct)}（最近期已公告月報：10月，來源：《115年度營業與目標-10(新).xls》工作表「10月」C18，未設定核定目標，達成率標示為「不適用」，不計入六高／六低責任區考核排名；11月官方月報尚未結算公布（未完整月））。`
       : `${money(regAct)}（來源：《115年度營業與目標-10(新).xls》工作表「10月」C18，未設定核定目標，達成率標示為「不適用」，不計入六高／六低責任區考核排名）。`;
@@ -4342,22 +4343,26 @@ function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cut
       <div style="margin-top:10px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;font-size:12px;color:#1e40af;line-height:1.6;">
         <b>📌 桃H 資料來源與口徑說明：</b><br>
         1. <b>官方營業實績</b>：${officialDesc}<br>
-        2. <b>ERP 實際出貨營收</b>：${money(erpRev)}（來源：ERP 訂單「桃H」業務區域代碼，${periodDesc}）。兩者來源與口徑不同，各自獨立列示。
+        2. <b>ERP 實際出貨營收</b>：${erpRevHtml}
       </div>
     `;
   } else if (isSpecial) {
-   specialNoteHtml = `
-     <div style="margin-top:8px;padding:6px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#64748b;">註：該區域未指派核定目標，達成率標示為不適用，不計入六高／六低責任區考核排名。</div>
-   `;
- }
+    specialNoteHtml = `
+      <div style="margin-top:8px;padding:6px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#64748b;">註：該區域未指派核定目標，達成率標示為不適用，不計入六高／六低責任區考核排名。</div>
+    `;
+  }
 
- const isAnnual = (mode === 'ytd');
+  const isAnnual = (mode === 'ytd');
   const isFallbackMonth = (!isAnnual && targetMonth !== drillMonth);
- const cardTitleDesc = (mode === 'ytd')
-   ? (reg === '桃H' ? `自 2026/09/26 起追蹤之出貨累計（截至 ${(DYN?.sourcesMeta?.orders?.latest || '2026-11-10').replaceAll('-','/')}）` : 'YTD 累計官方核定目標與營業實績')
-   : (isFallbackMonth ? `官方核定目標與營業實績（最近期：${Number(targetMonth.slice(5))}月已公告月報基準）` : `${Number(targetMonth.slice(5))}月官方核定目標與營業實績`);
+  const cardTitleDesc = (mode === 'ytd')
+    ? (reg === '桃H'
+        ? (data
+            ? `自 2026/09/26 起追蹤之出貨累計（截至 ${(data.period ? data.period.split('~')[1]?.trim() : (DYN?.sourcesMeta?.orders?.latest || '2026-11-10').replaceAll('-','/'))}）`
+            : '專案追蹤區出貨累計（此期間責任區明細尚未提供）')
+        : 'YTD 累計官方核定目標與營業實績')
+    : (isFallbackMonth ? `官方核定目標與營業實績（最近期：${Number(targetMonth.slice(5))}月已公告月報基準）` : `${Number(targetMonth.slice(5))}月官方核定目標與營業實績`);
 
- let fallbackMonthNoteHtml = '';
+  let fallbackMonthNoteHtml = '';
  if (isFallbackMonth && !isSpecial) {
    fallbackMonthNoteHtml = `
      <div style="margin-top:8px;padding:6px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#64748b;">
@@ -4384,7 +4389,7 @@ function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cut
  `;
 
  if(!data){
-   return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">${viewBarHtml}<div class="drill-tab-bar" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">${tabsHtml}</div>${regKpiCardHtml}<div class="warn">該區域（${esc(reg)}）在所選期間暫無訂單下鑽資料。</div></div>`;
+   return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">${viewBarHtml}<div class="drill-tab-bar" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">${tabsHtml}</div>${regKpiCardHtml}<div class="warn">該區域（${esc(reg)}）在所選期間暫無訂單下鑽資料（此期間責任區明細尚未提供）。</div></div>`;
  }
 
  const clientRows=data.topClients.map(c=>{

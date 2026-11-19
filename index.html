@@ -4,7 +4,7 @@
 
 <title>巧展｜董事長營運洞察（11/10 出退整合試算版）</title>
 
-<script src="dashboard_data.js"></script>
+<script src="./dashboard_data_core.js?v=20261110-opt2"></script>
 
 <style>
 
@@ -1869,7 +1869,7 @@ function getMergedDormantData(dormSource, selectedBranches, is6mFocus, currentKe
 
   if (branches.length === 1 && pool.byRegion && pool.byRegion[branches[0]]) {
     const rd = pool.byRegion[branches[0]];
-    const bCusts = rd.customers || [];
+    const bCusts = (rd.customers && rd.customers.length) ? rd.customers : allCusts.filter(c => c.branch === branches[0]);
     const b6m = bCusts.filter(c => c.baseMonths >= 6);
     const sb = rd.statusBreakdown || {};
     const bWithNew = bCusts.filter(c => c.hasNewOrders);
@@ -1943,7 +1943,21 @@ function getMergedProductData(prodData, selectedBranches) {
 
 
 
+  function calcProductGmShares(catList, refGmVal) {
+    const ref = Number((refGmVal || 0).toFixed(2));
+    const posCats = (catList || []).filter(c => (c.net || 0) > 0);
+    const posTotalNet = posCats.reduce((sum, c) => sum + c.net, 0);
+    if (posTotalNet <= 0) return { aboveAvgShare: 0, belowAvgShare: 0 };
+    const aboveNet = posCats.filter(c => Number((c.gm || 0).toFixed(2)) >= ref).reduce((sum, c) => sum + c.net, 0);
+    const aboveAvgShare = Math.round(aboveNet / posTotalNet * 1000) / 10;
+    const belowAvgShare = Math.round((100 - aboveAvgShare) * 10) / 10;
+    return { aboveAvgShare, belowAvgShare };
+  }
+
   if (branches.length === 5 && prodData.categories) {
+
+    const tGm5 = prodData.totalGm != null ? prodData.totalGm : (prodData.companyGm != null ? prodData.companyGm : (prodData.totalNet ? prodData.totalMargin / prodData.totalNet * 100 : 0));
+    const shares5 = calcProductGmShares(prodData.categories, tGm5);
 
     return {
 
@@ -1951,17 +1965,17 @@ function getMergedProductData(prodData, selectedBranches) {
 
       totalMargin: prodData.totalMargin,
 
-      companyGm: prodData.companyGm,
+      companyGm: prodData.companyGm != null ? prodData.companyGm : tGm5,
 
-      totalGm: prodData.totalGm || prodData.companyGm,
+      totalGm: tGm5,
 
       categoriesCount: prodData.categoriesCount || prodData.categories.length,
 
       subCategoriesCount: prodData.subCategoriesCount || prodData.categories.reduce((acc, c) => acc + (c.subCategories ? c.subCategories.length : 0), 0),
 
-      aboveAvgShare: prodData.aboveAvgShare || 0,
+      aboveAvgShare: shares5.aboveAvgShare,
 
-      belowAvgShare: prodData.belowAvgShare || 0,
+      belowAvgShare: shares5.belowAvgShare,
 
       categories: prodData.categories,
 
@@ -1985,7 +1999,7 @@ function getMergedProductData(prodData, selectedBranches) {
 
     const tGm = rd.totalGm != null ? rd.totalGm : (rd.companyGm != null ? rd.companyGm : (tNet ? tMargin / tNet * 100 : 0));
 
-    const aboveNet = catList.filter(c => (c.gm || 0) >= tGm).reduce((sum, c) => sum + c.net, 0);
+    const shares1 = calcProductGmShares(catList, tGm);
 
     return {
 
@@ -2001,9 +2015,9 @@ function getMergedProductData(prodData, selectedBranches) {
 
       subCategoriesCount: rd.subCategoriesCount || catList.reduce((acc, c) => acc + (c.subCategories ? c.subCategories.length : 0), 0),
 
-      aboveAvgShare: rd.aboveAvgShare != null ? rd.aboveAvgShare : (tNet ? Math.round(aboveNet / tNet * 1000) / 10 : 0),
+      aboveAvgShare: shares1.aboveAvgShare,
 
-      belowAvgShare: rd.belowAvgShare != null ? rd.belowAvgShare : (tNet ? Math.round((tNet - aboveNet) / tNet * 1000) / 10 : 0),
+      belowAvgShare: shares1.belowAvgShare,
 
       categories: catList,
 
@@ -2161,11 +2175,7 @@ function getMergedProductData(prodData, selectedBranches) {
 
 
 
-  const aboveNet = categories.filter(c => c.gm >= compGm).reduce((sum, c) => sum + c.net, 0);
-
-  const aboveAvgShare = totalNet ? Math.round(aboveNet / totalNet * 1000) / 10 : 0;
-
-  const belowAvgShare = totalNet ? Math.round((totalNet - aboveNet) / totalNet * 1000) / 10 : 0;
+  const { aboveAvgShare, belowAvgShare } = calcProductGmShares(categories, compGm);
 
   const subCount = categories.reduce((acc, c) => acc + (c.subCategories ? c.subCategories.length : 0), 0);
 
@@ -2934,9 +2944,9 @@ function render(){
 
 
   let tops = s?.top_customers || [];
-  if(!tops.length && mode==='week'){
+  if(!tops.length && (mode==='week'||mode==='day')){
     const custSource=(typeof CUSTOMER_DRILLDOWN!=='undefined'?CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.CUSTOMER_DRILLDOWN:null))||{};
-    tops = custSource?.week?.[key]?.topClients || [];
+    tops = custSource?.[mode]?.[key]?.topClients || [];
   }
 
   if(noOrders){
@@ -3108,7 +3118,7 @@ function render(){
 
     const ncSource = (typeof NEW_CUSTOMER_DRILLDOWN!=='undefined'?NEW_CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.NEW_CUSTOMER_DRILLDOWN:null))||{};
 
-    const ncPool = ncSource[mode==='ytd'?'ytd':(mode==='week'?'week':'month')]||{};
+    const ncPool = ncSource[mode]||ncSource['month']||{};
 
     const ncData = ncPool[key] || null;
 
@@ -3400,7 +3410,9 @@ function render(){
     let shipCalloutHtml = '';
 
     const snapDateStr = snapshotDate ? fmtDate(snapshotDate).slice(5) : '-';
-    if (mode === 'day' || mode === 'week') {
+    if (mode === 'day' && window.UNSHIPPED_DRILLDOWN?.day?.[key]) {
+      shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:12px;"><b>ℹ️ 即時存量快照說明：</b>完工未出貨為選定當日（快照基準日 ${snapDateStr}）之即時完工未出貨存量快照（排除庫存生產單），非月末彙總推估。</div>`;
+    } else if (mode === 'day' || mode === 'week') {
       shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:12px;"><b>ℹ️ 時點存量說明：</b>完工未出貨為管理月期末／最新結算快照（快照基準日 ${snapDateStr}），所選日期（${fmtDate(selected).slice(5)}）顯示所屬管理月之結算存量，非選定當天之即時存量。</div>`;
     } else if (mode === 'ytd') {
       shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:12px;"><b>ℹ️ 時點存量說明：</b>YTD 完工未出貨顯示最新期末結算快照（快照基準日 ${snapDateStr}），時點存量不跨月加總累計。</div>`;
@@ -3486,7 +3498,9 @@ ${shipCalloutHtml}`;
 
   let updateCutoff = DYN?.sourcesMeta?.signoff?.latest ? fmtDate(DYN.sourcesMeta.signoff.latest).slice(5) : ((typeof LATEST !== 'undefined' && LATEST) ? fmtDate(LATEST).slice(5) : '11/10');
 
-  $('signoffContent').innerHTML=`<div class="kpis"><div class="kpi"><small>${modeText}總簽核</small><b>${fmt(signTotal)}</b><div class="note">筆</div></div><div class="kpi"><small>現場帳號簽核</small><b class="green">${signOnsiteShare.toFixed(2)}%</b><div class="note">${fmt(signOnsite)} 筆</div></div><div class="kpi"><small>副理帳號簽核</small><b class="orange">${signManagerShare.toFixed(2)}%</b><div class="note">${fmt(signManager)} 筆</div></div><div class="kpi"><small>資料更新狀態</small><b>截至 ${updateCutoff}</b><div class="note">支援日／週／月／YTD</div></div></div><div class="callout"><b>本期判讀：</b>${insight}</div><table><thead><tr><th>月份</th><th class="num">總簽核</th><th class="num">現場占比</th><th class="num">副理占比</th></tr></thead><tbody>${signTrendRows(maxM)}</tbody></table><div class="manage"><b>帳號口徑：</b>admin、admin1、Dora 合併視為江副理帳號；其餘帳號列為現場簽核。每日簽核明細已全量動態重算。</div>`;
+  const signoffTableNote = (mode === 'day') ? '<div class="manage" style="margin-top:6px;"><b>顯示說明：</b>簽核分析表格依月度彙總，呈現整體簽核流程效率趨勢；上方指標卡為選定當日之出貨與折讓即時數值。</div>' : '';
+  const signoffTableTh = (mode === 'day') ? '月份（月度歷史趨勢）' : '月份';
+  $('signoffContent').innerHTML=`<div class="kpis"><div class="kpi"><small>${modeText}總簽核</small><b>${fmt(signTotal)}</b><div class="note">筆</div></div><div class="kpi"><small>現場帳號簽核</small><b class="green">${signOnsiteShare.toFixed(2)}%</b><div class="note">${fmt(signOnsite)} 筆</div></div><div class="kpi"><small>副理帳號簽核</small><b class="orange">${signManagerShare.toFixed(2)}%</b><div class="note">${fmt(signManager)} 筆</div></div><div class="kpi"><small>資料更新狀態</small><b>截至 ${updateCutoff}</b><div class="note">支援日／週／月／YTD</div></div></div><div class="callout"><b>本期判讀：</b>${insight}</div><table><thead><tr><th>${signoffTableTh}</th><th class="num">總簽核</th><th class="num">現場占比</th><th class="num">副理占比</th></tr></thead><tbody>${signTrendRows(maxM)}</tbody></table>${signoffTableNote}<div class="manage"><b>帳號口徑：</b>admin、admin1、Dora 合併視為江副理帳號；其餘帳號列為現場簽核。每日簽核明細已全量動態重算。</div>`;
 
 
 
@@ -3560,7 +3574,7 @@ ${shipCalloutHtml}`;
 
   const equipTableHtml = renderEquipTableHtml(equipMonth, currentEquipView);
 
-  $('machineContent').innerHTML=`${(mode==='day'||mode==='week')?'<div class="warn"><b>設備與生產資料為月度彙總。</b>日／週模式下顯示所選日期所屬管理月的月度資料，不拆成單日或單週。</div>':''}${equipWarn}<div class="compare"><div class="compare-card"><h3>固定月產能最高達成</h3><div class="big red">${topEquip?.rate!=null?topEquip.rate.toFixed(2)+'%':'-'}</div><div class="sub">${topEquip?.code||''} ${topEquip?.name||''}</div></div><div class="compare-card"><h3>固定月產能較低代表</h3><div class="big orange">${low[0]?.rate!=null?low[0].rate.toFixed(2)+'%':'-'}</div><div class="sub">${low[0]?.code||''} ${low[0]?.name||''}</div></div><div class="compare-card"><h3>資料月份</h3><div class="big">${Number(equipMonth.slice(5))} 月</div><div class="sub">${isEquipMissing ? `${mkey}待提供；顯示${Number(equipMonth.slice(5))}月正式數據` : `設備實際產量已更新至 ${Number(equipMonth.slice(5))} 月`}</div></div></div><div class="warn"><b>設備解讀：</b>此為實際產量 ÷ 設定月產能之「固定月產能達成率」，不是稼動率，亦不同於依工作天數計算之理想產能（9月理想產能達成率為 86.11%）；已依管理要求排除 6 台非主要／輔助設備（L001、E003、E004、E005、F001、G004）。需搭配產能基準、排程、用途與停機情形判讀。</div>${equipTableHtml}<div class="callout" style="margin-top:14px"><b>製品四工序｜${Number(equipMonth.slice(5))} 月</b></div><table><thead><tr><th>工序</th><th class="num">加工數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${frows}</tbody></table><div class="callout" style="margin-top:14px"><b>大圖部各工序（${lfList.length} 工序）｜${Number(equipMonth.slice(5))} 月</b></div><table><thead><tr><th>工序</th><th class="num">加工數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${lfrows}</tbody><tfoot><tr style="font-weight:bold;background:#f8fafc;"><td>大圖部合計</td><td class="num">${fmtLf(lfTotQty)}</td><td class="num">${fmtLf(lfTotArea)}</td><td class="num">${lfTotQty > 0 ? (lfTotArea / lfTotQty).toFixed(2) : '-'}</td></tr></tfoot></table><div style="font-size:11px;color:#64748b;margin-top:4px;line-height:1.5;"><b>工序說明：</b>大圖部統一為 5 大正式工序（美工、大機輸出、小機輸出、UV輸出、後製）；後製採原始 Excel 獨立對帳去重數據（原生外勞總計列已含劉桂禎，嚴格杜絕重複累加）；平均才數分母嚴格依原始 Excel 數量欄（總才數 ÷ 加工數量）重新計算；王瑞昌生產紀錄已依正式核定規則全數歸入「後製」工序（1～8月有效納入，9～10月原始檔為 0 筆）。</div>`;
+  $('machineContent').innerHTML=`${(mode==='day')?'<div class="warn"><b>設備產能為月度結算數據，目前顯示所屬月份之機台稼動與產能分析。</b>日模式下不拆成單日推估。</div>':(mode==='week'?'<div class="warn"><b>設備與生產資料為月度彙總。</b>週模式下顯示所選日期所屬管理月的月度資料，不拆成單週。</div>':'')}${equipWarn}<div class="compare"><div class="compare-card"><h3>固定月產能最高達成</h3><div class="big red">${topEquip?.rate!=null?topEquip.rate.toFixed(2)+'%':'-'}</div><div class="sub">${topEquip?.code||''} ${topEquip?.name||''}</div></div><div class="compare-card"><h3>固定月產能較低代表</h3><div class="big orange">${low[0]?.rate!=null?low[0].rate.toFixed(2)+'%':'-'}</div><div class="sub">${low[0]?.code||''} ${low[0]?.name||''}</div></div><div class="compare-card"><h3>資料月份</h3><div class="big">${Number(equipMonth.slice(5))} 月</div><div class="sub">${isEquipMissing ? `${mkey}待提供；顯示${Number(equipMonth.slice(5))}月正式數據` : `設備實際產量已更新至 ${Number(equipMonth.slice(5))} 月`}</div></div></div><div class="warn"><b>設備解讀：</b>此為實際產量 ÷ 設定月產能之「固定月產能達成率」，不是稼動率，亦不同於依工作天數計算之理想產能（9月理想產能達成率為 86.11%）；已依管理要求排除 6 台非主要／輔助設備（L001、E003、E004、E005、F001、G004）。需搭配產能基準、排程、用途與停機情形判讀。</div>${equipTableHtml}<div class="callout" style="margin-top:14px"><b>製品四工序｜${Number(equipMonth.slice(5))} 月</b></div><table><thead><tr><th>工序</th><th class="num">加工數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${frows}</tbody></table><div class="callout" style="margin-top:14px"><b>大圖部各工序（${lfList.length} 工序）｜${Number(equipMonth.slice(5))} 月</b></div><table><thead><tr><th>工序</th><th class="num">加工數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${lfrows}</tbody><tfoot><tr style="font-weight:bold;background:#f8fafc;"><td>大圖部合計</td><td class="num">${fmtLf(lfTotQty)}</td><td class="num">${fmtLf(lfTotArea)}</td><td class="num">${lfTotQty > 0 ? (lfTotArea / lfTotQty).toFixed(2) : '-'}</td></tr></tfoot></table><div style="font-size:11px;color:#64748b;margin-top:4px;line-height:1.5;"><b>工序說明：</b>大圖部統一為 5 大正式工序（美工、大機輸出、小機輸出、UV輸出、後製）；後製採原始 Excel 獨立對帳去重數據（原生外勞總計列已含劉桂禎，嚴格杜絕重複累加）；平均才數分母嚴格依原始 Excel 數量欄（總才數 ÷ 加工數量）重新計算；王瑞昌生產紀錄已依正式核定規則全數歸入「後製」工序（1～8月有效納入，9～10月原始檔為 0 筆）。</div>`;
 
 
 
@@ -3576,7 +3590,7 @@ ${shipCalloutHtml}`;
 
     const prodSource = (typeof PRODUCT_DRILLDOWN!=='undefined'?PRODUCT_DRILLDOWN:(typeof window!=='undefined'?window.PRODUCT_DRILLDOWN:null))||{};
 
-    const prodPool = prodSource[mode==='ytd'?'ytd':(mode==='week'?'week':'month')]||{};
+    const prodPool = prodSource[mode] || prodSource['month'] || {};
 
     const prodData = prodPool[key] || null;
 
@@ -3598,17 +3612,17 @@ ${shipCalloutHtml}`;
 
     $('dongContent').innerHTML='<div class="warn">當日無訂單交易。</div>';
 
-  } else if(dz){
+  } else if(dz || (typeof DONG_COMBINED_DRILLDOWN!=='undefined' && DONG_COMBINED_DRILLDOWN[mode]?.[key])){
 
     const dongBranchBtnHtml = renderMultiRegionSelectorHtml('dong', currentDongBranches);
 
 
 
-    let currentMonthKey = (mode==='month'||mode==='ytd')?key:((mode==='week')?key:mgmtKey(s?.end || selected));
+    let currentMonthKey = (mode==='month'||mode==='ytd'||mode==='week'||mode==='day')?key:mgmtKey(s?.end || selected);
 
     const combSource=(typeof DONG_COMBINED_DRILLDOWN!=='undefined'?DONG_COMBINED_DRILLDOWN:(typeof window!=='undefined'?window.DONG_COMBINED_DRILLDOWN:null))||{};
 
-    const cPool=combSource[(mode==='ytd')?'ytd':(mode==='week'?'week':'month')]||{};
+    const cPool=combSource[mode]||combSource['month']||{};
 
     const curComb=cPool[currentMonthKey]||null;
 
@@ -3716,12 +3730,74 @@ picker.value=LATEST;picker.min=EARLIEST;picker.max=LATEST;
 
 picker.addEventListener('change',render);
 
+const _modeBundlePromises = {};
+let _modeSwitchSeq = 0;
+
+function showDataLoadingOverlay(show, labelText) {
+  let el = document.getElementById('dataLoadingOverlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'dataLoadingOverlay';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);';
+    el.innerHTML = '<div style="background:#fff;border:1px solid #cbd5e1;border-radius:14px;padding:22px 28px;box-shadow:0 12px 32px rgba(15,23,42,0.2);text-align:center;max-width:360px;"><div style="font-size:15px;font-weight:700;color:#153e72;margin-bottom:8px;" id="dataLoadingTitle">正在載入資料...</div><div style="font-size:12px;color:#64748b;line-height:1.6;">首次切換模式會動態載入對應明細資料，載入完成後將快取於記憶體，後續切換無須重複下載。</div></div>';
+    document.body.appendChild(el);
+  }
+  const titleEl = document.getElementById('dataLoadingTitle');
+  if (titleEl && labelText) titleEl.textContent = labelText;
+  el.style.display = show ? 'flex' : 'none';
+}
+
+function ensureModeDataLoaded(targetMode) {
+  if (targetMode !== 'day' && targetMode !== 'week') return Promise.resolve(true);
+  if (window.__LOADED_DATA_BUNDLES && window.__LOADED_DATA_BUNDLES[targetMode]) return Promise.resolve(true);
+  if (_modeBundlePromises[targetMode]) return _modeBundlePromises[targetMode];
+  const ver = encodeURIComponent(window.BUNDLE_VERSION || '20261110-opt2');
+  const src = `./dashboard_data_${targetMode}.js?v=${ver}`;
+  _modeBundlePromises[targetMode] = new Promise((resolve, reject) => {
+    const sc = document.createElement('script');
+    sc.src = src;
+    sc.async = true;
+    sc.onload = () => {
+      window.__LOADED_DATA_BUNDLES = window.__LOADED_DATA_BUNDLES || {};
+      window.__LOADED_DATA_BUNDLES[targetMode] = true;
+      resolve(true);
+    };
+    sc.onerror = () => {
+      delete _modeBundlePromises[targetMode];
+      reject(new Error(`無法載入靜態資料檔：${src}`));
+    };
+    document.head.appendChild(sc);
+  });
+  return _modeBundlePromises[targetMode];
+}
+window.ensureModeDataLoaded = ensureModeDataLoaded;
+
+async function switchModeSafely(targetMode) {
+  const mySeq = ++_modeSwitchSeq;
+  const needLoad = (targetMode === 'day' || targetMode === 'week') && !(window.__LOADED_DATA_BUNDLES && window.__LOADED_DATA_BUNDLES[targetMode]);
+  if (needLoad) {
+    const modeZh = targetMode === 'day' ? '日模式' : '週模式';
+    showDataLoadingOverlay(true, `正在載入「${modeZh}」完整明細資料，請稍候...`);
+    try {
+      await ensureModeDataLoaded(targetMode);
+    } catch (err) {
+      if (mySeq === _modeSwitchSeq) {
+        showDataLoadingOverlay(false);
+        alert(err.message || '載入資料失敗，請重新整理頁面後再試。');
+      }
+      return;
+    }
+    if (mySeq !== _modeSwitchSeq) return;
+    showDataLoadingOverlay(false);
+  }
+  document.querySelectorAll('.mode').forEach(x => x.classList.toggle('active', x.dataset.mode === targetMode));
+  mode = targetMode;
+  render();
+}
+window.switchModeSafely = switchModeSafely;
+
 document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{
-
-  document.querySelectorAll('.mode').forEach(x=>x.classList.remove('active'));
-
-  b.classList.add('active');mode=b.dataset.mode;render();
-
+  switchModeSafely(b.dataset.mode);
 }));
 
 $('prevBtn').onclick=()=>{let d=parseLocal(picker.value);d.setDate(d.getDate()-1);picker.value=effectiveDate(localYMD(d));render()};
@@ -4226,9 +4302,14 @@ add('target','營業目標｜優先追蹤達成率較低的區域',`${cardPeriod
 
   } else {
 
-    const cats=(s?.categories||[]).filter(c=>c.net>0&&c.gm!=null&&s?.gm!=null&&c.gm<s.gm).sort((a,b)=>b.net-a.net);
+    let rawCats = s?.categories || [];
+    if (!rawCats.length && (mode === 'week' || mode === 'day')) {
+      const prodSource = (typeof PRODUCT_DRILLDOWN !== 'undefined' ? PRODUCT_DRILLDOWN : (typeof window !== 'undefined' ? window.PRODUCT_DRILLDOWN : null)) || {};
+      rawCats = prodSource?.[mode]?.[key]?.categories || [];
+    }
+    const cats=rawCats.filter(c=>c.net>0&&c.gm!=null&&s?.gm!=null&&c.gm<s.gm).sort((a,b)=>b.net-a.net);
 
-    add('product','產品結構｜優先檢查高營收、低於整體毛利的品類',`所選期間整體毛利率 ${(s?.gm!=null?s.gm:0).toFixed(2)}%；已提供品類中 ${cats.length} 類低於整體。`,'先抽查最大營收候選品類的折讓、材料、加工與運費；確認原因後再調價或降成本。','業務主管＋成本會計','建議 7 日內完成成本拆解；次期追蹤同品類毛利率、營收與毛利額。','整體毛利率僅作篩選基準，並非核定門檻；缺品項成本明細。',cats.slice(0,5).map(c=>[c.name,money(c.net)+'／毛利 '+(c.gm!=null?c.gm.toFixed(2)+'%':'-'),'若提高 1 個百分點：'+money(c.net*.01)+'（固定淨額試算，非承諾收益）']),['候選品類','訂單淨額／毛利率','毛利率提升 1 個百分點 效益試算'],null,{drillMonth:(mode==='week'?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
+    add('product','產品結構｜優先檢查高營收、低於整體毛利的品類',`所選期間整體毛利率 ${(s?.gm!=null?s.gm:0).toFixed(2)}%；已提供品類中 ${cats.length} 類低於整體。`,'先抽查最大營收候選品類的折讓、材料、加工與運費；確認原因後再調價或降成本。','業務主管＋成本會計','建議 7 日內完成成本拆解；次期追蹤同品類毛利率、營收與毛利額。','整體毛利率僅作篩選基準，並非核定門檻；缺品項成本明細。',cats.slice(0,5).map(c=>[c.name,money(c.net)+'／毛利 '+(c.gm!=null?c.gm.toFixed(2)+'%':'-'),'若提高 1 個百分點：'+money(c.net*.01)+'（固定淨額試算，非承諾收益）']),['候選品類','訂單淨額／毛利率','毛利率提升 1 個百分點 效益試算'],null,{drillMonth:((mode==='week'||mode==='day')?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
 
   }
 
@@ -4241,19 +4322,21 @@ add('target','營業目標｜優先追蹤達成率較低的區域',`${cardPeriod
   } else {
 
     let custCandidates = s?.top_customers || [];
-    if (!custCandidates.length && mode === 'week') {
+    if (!custCandidates.length && (mode === 'week' || mode === 'day')) {
       const custSource = (typeof CUSTOMER_DRILLDOWN !== 'undefined' ? CUSTOMER_DRILLDOWN : (typeof window !== 'undefined' ? window.CUSTOMER_DRILLDOWN : null)) || {};
-      custCandidates = custSource?.week?.[key]?.topClients || [];
+      custCandidates = custSource?.[mode]?.[key]?.topClients || [];
     }
     const cs=custCandidates.filter(c=>c.net>0&&c.gm!=null&&s?.gm!=null&&c.gm<s.gm).sort((a,b)=>b.net-a.net);
 
-    add('customer','核心客戶｜先查主要客戶的毛利差異',`已提供的主要客戶名單中，${cs.length} 戶毛利率低於本期整體 ${(s?.gm!=null?s.gm:0).toFixed(2)}%。`,'依下列候選名單查報價、成本與產品組合，逐戶提出維持條件或改善方案。','各客戶負責業務','建議 7 日內回報原因；次期以同客戶營收、毛利額與毛利率驗收。','只有各期主要客戶截選，不能據此推算完整客戶衰退率或流失。',cs.map(c=>[c.name,money(c.net),'毛利 '+money(c.margin)+'／'+(c.gm!=null?c.gm.toFixed(2)+'%':'-')]),['主要客戶','訂單淨額','毛利／毛利率'],null,{customerMonth:(mode==='week'?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
+    add('customer','核心客戶｜先查主要客戶的毛利差異',`已提供的主要客戶名單中，${cs.length} 戶毛利率低於本期整體 ${(s?.gm!=null?s.gm:0).toFixed(2)}%。`,'依下列候選名單查報價、成本與產品組合，逐戶提出維持條件或改善方案。','各客戶負責業務','建議 7 日內回報原因；次期以同客戶營收、毛利額與毛利率驗收。','只有各期主要客戶截選，不能據此推算完整客戶衰退率或流失。',cs.map(c=>[c.name,money(c.net),'毛利 '+money(c.margin)+'／'+(c.gm!=null?c.gm.toFixed(2)+'%':'-')]),['主要客戶','訂單淨額','毛利／毛利率'],null,{customerMonth:((mode==='week'||mode==='day')?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
 
   }
 
 
 
-  const shipSrc = (typeof window !== 'undefined' && window.UNSHIPPED_DRILLDOWN?.month?.[mk]) || null;
+  const hasDayShipSnap = (mode === 'day' && typeof window !== 'undefined' && Boolean(window.UNSHIPPED_DRILLDOWN?.day?.[key]));
+  const shipSrc = (typeof window !== 'undefined' && (window.UNSHIPPED_DRILLDOWN?.[mode]?.[key] || window.UNSHIPPED_DRILLDOWN?.month?.[mk])) || null;
+  const shipSnapLabel = hasDayShipSnap ? `${key} 當日即時快照` : '期末快照';
   const u = shipSrc ? {
     order_count: shipSrc.summary.orders,
     line_count: shipSrc.summary.completedUnshippedWorkOrders,
@@ -4262,7 +4345,7 @@ add('target','營業目標｜優先追蹤達成率較低的區域',`${cardPeriod
     max_days: shipSrc.summary.maxWaitDays
   } : (s?.unshipped || { order_count: 0, line_count: 0, zero_order_count: 0, completedUnshippedAmt: 0, max_days: 0 });
 
-  add('shipment','完工未出貨｜補齊零金額與長等待案件',`期末快照 ${u.order_count} 單／${u.line_count} 工單；完工未出金額 ${money(u.completedUnshippedAmt || 0)}；最長等待 ${u.max_days} 天。`,'請出貨窗口匯出訂單編號、工單單號、完工日、金額與卡點。零淨額工單先核對計價方式，再逐單確認可出貨日。','出貨窗口＋業務＋財務','建議 3 日內完成零金額原因核對；每週對同一批案件核對已出貨、取消及剩餘數。','依完工未出貨定案口徑（選項 A）判定；納入完工日 <= 基準日未出貨之全部工單；管理區分已到期與提前完工；保留零淨額工單。',null,null,null,{drillMonth:(mode==='week'?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
+  add('shipment','完工未出貨｜補齊零金額與長等待案件',`${shipSnapLabel} ${u.order_count} 單／${u.line_count} 工單；完工未出金額 ${money(u.completedUnshippedAmt || 0)}；最長等待 ${u.max_days} 天。`,'請出貨窗口匯出訂單編號、工單單號、完工日、金額與卡點。零淨額工單先核對計價方式，再逐單確認可出貨日。','出貨窗口＋業務＋財務','建議 3 日內完成零金額原因核對；每週對同一批案件核對已出貨、取消及剩餘數。','依完工未出貨定案口徑（選項 A）判定；納入完工日 <= 基準日未出貨之全部工單；管理區分已到期與提前完工；保留零淨額工單。',null,null,null,{drillMonth:((mode==='week'||mode==='day')?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
 
 
 
@@ -4310,11 +4393,18 @@ add('target','營業目標｜優先追蹤達成率較低的區域',`${cardPeriod
 
  const dorm=s?.dormant||{};
 
- const dormObserved=dorm.withNewOrders||0;
+ const dormBasePool = (typeof window !== 'undefined' && window.DORMANT_CUSTOMER_DRILLDOWN?.modes?.baseline) || {};
+ const dormDaySnap = (mode==='day' && dormBasePool[key]) ? dormBasePool[key] : (dormBasePool[mk] || dormBasePool['default'] || null);
+ const dormObserved = (dormDaySnap && dormDaySnap.withNewOrdersCount != null) ? dormDaySnap.withNewOrdersCount : (dorm.withNewOrders||0);
 
  const dormCount=dorm.count||268;
 
- add('customer-life','新舊客｜先把成交名單變成回訪清單',`本期新客 ${s?.new_count || 0} 戶，訂單淨額 ${money(s?.new_net || 0)}；舊客追蹤含 8/19 會議人工盤點 242 戶與 8/25 CSV 正式條件篩選 ${dormCount} 戶（另有 2 筆客戶名稱／代碼匹配待確認，非兩者差額原因）${dormObserved>0?`（其中 ${dormObserved} 戶於基準日後有新增交易，待業務確認採購性質，不直接判定為回流）`:''}。`,'新客逐戶確認第二次採購需求與預計日期；舊客先以完整交易紀錄重建名單，再排回訪優先序。','業務主管','建議 7 日內完成所列新客回訪安排；取得逐筆交易後才計算 30／60／90 日續購。','新客名單可能是截選；缺完整歷史交易、客戶建立日與回訪紀錄，不能將舊客清單當動態流失數。',(s?.new_customers||[]).slice(0,5).map(c=>[c.name,money(c.net),'續購／負責人待確認']),['新客名稱','訂單淨額','追蹤狀態'],null,{newCustMonth:mk,cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
+ const ncObj = (typeof window !== 'undefined' && window.NEW_CUSTOMER_DRILLDOWN?.[mode]?.[key]) || null;
+ const ncCnt = ncObj ? (ncObj.totalCount || 0) : (s?.new_count || 0);
+ const ncNet = ncObj ? (ncObj.totalNet || 0) : (s?.new_net || 0);
+ const ncRows = ncObj ? (ncObj.customers || []) : (s?.new_customers || []);
+
+ add('customer-life','新舊客｜先把成交名單變成回訪清單',`本期新客 ${ncCnt} 戶，訂單淨額 ${money(ncNet)}；舊客追蹤含 8/19 會議人工盤點 242 戶與 8/25 CSV 正式條件篩選 ${dormCount} 戶（另有 2 筆客戶名稱／代碼匹配待確認，非兩者差額原因）${dormObserved>0?`（截至所選基準日共 ${dormObserved} 戶已實際出貨回流）`:''}。`,'新客逐戶確認第二次採購需求與預計日期；舊客先以完整交易紀錄重建名單，再排回訪優先序。','業務主管','建議 7 日內完成所列新客回訪安排；取得逐筆交易後才計算 30／60／90 日續購。','新客名單可能是截選；缺完整歷史交易、客戶建立日與回訪紀錄，不能將舊客清單當動態流失數。',ncRows.slice(0,5).map(c=>[c.name,money(c.net),'續購／負責人待確認']),['新客名稱','訂單淨額','追蹤狀態'],null,{newCustMonth:((mode==='week'||mode==='day')?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
 
  return out;
 
@@ -4330,7 +4420,7 @@ function boardRender(){
   board.innerHTML='<div class="block-title">主管決策｜數據 → 查因 → 行動 → 驗收</div><div class="content"><div class="warn">已接入標準化動態管線（支援 2025/12/26 至 ' + ordLatestFmt + ' 每日/每週/每月/YTD 動態重算，簽核至 ' + signLatestFmt + '）。正式營業實績與設備實際產量已更新至 2026 年 10 月。優先序為建議工作順序；期限、責任單位與毛利試算均待主管核定。</div><div class="decision-grid">'+decisions().map((d,i)=>`<article class="decision-card"><span class="tag blue">建議順序 ${i+1}</span><h3>${esc(d.title)}</h3><p>${esc(d.evidence)}</p><p><b>下一步：</b>${esc(d.action)}</p><button data-decision="${d.id}">查看數據與建立追蹤</button></article>`).join('')+'</div></div>';
 }
 
-const priorRender=render;render=function(){priorRender();boardRender();};picker.removeEventListener('change',priorRender);picker.addEventListener('change',render);
+let _lastRenderedScopeKey='';const priorRender=render;render=function(){const _nextScopeKey=mode+'|'+(picker?.value||'');if(_lastRenderedScopeKey && _lastRenderedScopeKey!==_nextScopeKey){document.getElementById('decisionDetail')?.remove();const _dr=document.getElementById('drawer');if(_dr)_dr.classList.remove('open');}_lastRenderedScopeKey=_nextScopeKey;priorRender();boardRender();};picker.removeEventListener('change',priorRender);picker.addEventListener('change',render);
 
 
 function renderTargetSummaryTableHtml(tMonth, isAnnual, view) {
@@ -4565,12 +4655,6 @@ function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cut
 
 function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDate,selectedBranch){
 
- if(mode==='day'){
-
-  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;"><div class="warn"><b>查核提醒：</b>日模式僅保留當期主要客戶與基礎數值。請切換至「週」、「月」或「YTD」模式查看完整趨勢與查核標籤。</div></div>`;
-
- }
-
  const activeBranches = normalizeBranchInput(selectedBranch || currentCustomerBranches);
 
  const curBranch = selectedBranch || currentCustomerBranch || '全部';
@@ -4579,7 +4663,7 @@ function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDat
 
  const custSource=(typeof CUSTOMER_DRILLDOWN!=='undefined'?CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.CUSTOMER_DRILLDOWN:null))||{};
 
- const drillMode=(mode==='ytd')?'ytd':(mode==='week'?'week':'month');
+ const drillMode=(mode==='ytd')?'ytd':(mode==='week'?'week':(mode==='day'?'day':'month'));
 
  const drillPool=custSource[drillMode]||{};
 
@@ -4627,9 +4711,13 @@ function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDat
 
   ?`已結月平均 ${money(currClient.ytdMonthlyAvgNet)} (佔比 ${currClient.share}%)`
 
+  :(mode==='day' || currClient.delta==null)
+
+  ?`當日出貨佔比 ${currClient.share}%（單日不計算逐客前日增減）`
+
   :`${currClient.delta>=0?'+':''}${money(currClient.delta)} (${currClient.deltaPct!==null?(currClient.deltaPct>0?'+':'')+currClient.deltaPct+'%':'新單'})`;
 
- const deltaColor=(mode==='ytd')?'#153e72':(currClient.delta>=0?'#16805a':'#cf3f49');
+ const deltaColor=(mode==='ytd'||mode==='day'||currClient.delta==null)?'#153e72':(currClient.delta>=0?'#16805a':'#cf3f49');
 
 
 
@@ -4687,8 +4775,8 @@ function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDat
 
  }else{
 
-  droppedHtml=(mode==='week')
-   ?`<div class="note" style="font-size:11px;line-height:1.5;">週模式聚焦當期實際出貨與產品結構，掉榜查核請切換至「月」模式檢視各月 Top10／Top5 變動。</div>`
+  droppedHtml=(mode==='week'||mode==='day')
+   ?`<div class="note" style="font-size:11px;line-height:1.5;">${mode==='day'?'日':'週'}模式聚焦當期實際出貨與產品結構，掉榜查核請切換至「月」模式檢視各月 Top10／Top5 變動。</div>`
    :`<div class="note" style="font-size:11px;line-height:1.5;">YTD 模式無去年同期逐客明細，掉榜查核請切換至「月」模式檢視各月 Top10／Top5 變動。</div>`;
 
  }
@@ -4697,7 +4785,7 @@ function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDat
 
  const cutoffStr=cutoffDate?(cutoffDate.slice(5,7)+'/'+cutoffDate.slice(8,10)):'09/13';
 
- const tagTitle=(mode==='ytd')?`2026 YTD 累計｜訂單截至 ${cutoffStr}`:(mode==='week'?`${effectiveMk} 週出貨口徑`:`${Number(effectiveMk?.slice(5, 7))} 月管理月口徑`);
+ const tagTitle=(mode==='ytd')?`2026 YTD 累計｜訂單截至 ${cutoffStr}`:(mode==='week'?`${effectiveMk} 週出貨口徑`:(mode==='day'?`${effectiveMk} 日出貨口徑`:`${Number(effectiveMk?.slice(5, 7))} 月管理月口徑`));
 
  const gmDiffStr=(currClient.gmDeltaPp!=null&&!isNaN(currClient.gmDeltaPp))?` (${currClient.gmDeltaPp>=0?'+':''}${currClient.gmDeltaPp.toFixed(2)} 個百分點)`:'';
 
@@ -4790,27 +4878,11 @@ function renderCustomerDrilldownHtml(mode,custMonth,selectedClientName,cutoffDat
 }
 
 function renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus,selectedBranch){
- if(mode==='day'){
-  const summaryObj=getSummary(picker.value);
-  const s=summaryObj.s;
-  const newCustList=s.new_customers||[];
-  const rowsHtml=newCustList.length?newCustList.map(c=>`<tr><td>${esc(c.name)}</td><td class="num">${money(c.net)}</td><td>當期建立</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:#6f7783;padding:12px;">當期無新增客戶</td></tr>';
-  return `<div class="drilldown-box" style="margin:16px 0;padding:14px;background:#f8fafc;border:1px solid #d7e3f0;border-radius:12px;">
-   <div class="warn" style="margin:0 0 12px;font-size:12px;line-height:1.6;">
-    <b>查核提醒：</b>新客實際出貨成交與 30／60／90 天續購追蹤以週／管理月／YTD 週期檢核為準；日模式僅呈現當期建立之客戶清單。
-   </div>
-   <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
-    <h4 style="margin:0 0 8px;font-size:13px;color:#153e72;">當期建立客戶清單（共 ${s?.new_count||0} 戶，訂單淨額 ${money(s?.new_net||0)}）</h4>
-    <table style="width:100%;font-size:12px;"><thead><tr><th>客戶名稱</th><th class="num">訂單淨額</th><th>備註</th></tr></thead><tbody>${rowsHtml}</tbody></table>
-   </div>
-  </div>`;
- }
-
  const activeBranches = normalizeBranchInput(selectedBranch || currentNewCustomerBranches);
  const curBranch = selectedBranch || currentNewCustomerBranch || '全部';
  const branchBtnsHtml = renderMultiRegionSelectorHtml('new-modal', activeBranches);
  const ncSource=(typeof NEW_CUSTOMER_DRILLDOWN!=='undefined'?NEW_CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.NEW_CUSTOMER_DRILLDOWN:null))||{};
- const drillMode=(mode==='ytd')?'ytd':(mode==='week'?'week':'month');
+ const drillMode=(mode==='ytd')?'ytd':(mode==='week'?'week':(mode==='day'?'day':'month'));
  const pool=ncSource[drillMode]||{};
  const effectiveMk=pool[drillMonth]?drillMonth:(mode==='month'&&pool['2026-08']?'2026-08':null);
  const rootData=pool[effectiveMk]||null;
@@ -4821,7 +4893,7 @@ function renderNewCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterStatus,
 
  const data = getMergedNewCustomersData(rootData, activeBranches);
  const cutoffStr=cutoffDate?(cutoffDate.slice(5,7)+'/'+cutoffDate.slice(8,10)):'10/25';
- const tagTitle=(mode==='ytd')?`2026 YTD 累計｜出貨截至 ${cutoffStr}`:(mode==='week'?`${effectiveMk} 週出貨口徑`:`${Number(effectiveMk?.slice(5, 7))} 月管理月出貨口徑`);
+ const tagTitle=(mode==='ytd')?`2026 YTD 累計｜出貨截至 ${cutoffStr}`:(mode==='week'?`${effectiveMk} 週出貨口徑`:(mode==='day'?`${effectiveMk} 日出貨口徑`:`${Number(effectiveMk?.slice(5, 7))} 月管理月出貨口徑`));
  const activeFilter=filterStatus||'全部';
  const branchLabel = data ? data.scopeNote : '五大區合計';
  const comp = data.definitionsComparison || {};
@@ -4976,7 +5048,7 @@ function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterSta
  window.currentDormantViewMode = window.currentDormantViewMode || 'baseline';
  const isDynamic = (window.currentDormantViewMode === 'dynamic');
 
- const mkey = (drillMonth && drillMonth >= '2026-10') ? drillMonth : (picker && picker.value && picker.value >= '2026-10' ? picker.value.slice(0,7) : '2026-10');
+ const mkey = (mode==='day' && (drillMonth || picker?.value)) ? (drillMonth || picker.value) : ((drillMonth && drillMonth >= '2026-10') ? drillMonth : (picker && picker.value && picker.value >= '2026-10' ? picker.value.slice(0,7) : '2026-10'));
  let activePool = dormSource;
  if(dormSource.modes){
   if(isDynamic){
@@ -6010,16 +6082,17 @@ function getDongDecision(summaryObj){
  const mk=mgmtKey(s?.end || selected);
  const annual=(mode==='ytd');
  const isWeek=(mode==='week');
- const scope=annual?'YTD':(isWeek?`${summaryObj.key || selected} 週`:mk+' 管理月');
- const dzSource=(typeof DONG_DRILLDOWN!=='undefined'?DONG_DRILLDOWN:(typeof window!=='undefined'?window.DONG_DRILLDOWN:null))||{};
- const dPool=dzSource[annual?'ytd':(isWeek?'week':'month')]||{};
- const curKey=annual?(mk in dPool?mk:'2026-11'):(isWeek?(summaryObj.key || selected):mk);
+ const isDay=(mode==='day');
+ const scope=annual?'YTD':(isWeek?`${summaryObj.key || selected} 週`:(isDay?`${summaryObj.key || selected} 單日`:mk+' 管理月'));
+ const dzSource=(typeof DONG_COMBINED_DRILLDOWN!=='undefined'?DONG_COMBINED_DRILLDOWN:(typeof window!=='undefined'?window.DONG_COMBINED_DRILLDOWN:null))||(typeof DONG_DRILLDOWN!=='undefined'?DONG_DRILLDOWN:(typeof window!=='undefined'?window.DONG_DRILLDOWN:null))||{};
+ const dPool=dzSource[annual?'ytd':(isWeek?'week':(isDay?'day':'month'))]||{};
+ const curKey=annual?(mk in dPool?mk:'2026-11'):((isWeek||isDay)?(summaryObj.key || selected):mk);
  const curData=dPool[curKey]||{};
  const net=curData.totalNet!=null?curData.totalNet:(s?.dong?.sales||0);
  const margin=curData.totalMargin!=null?curData.totalMargin:(s?.dong?.margin||0);
  const gm=curData.totalGm!=null?curData.totalGm:(s?.dong?.gm||0);
  const qty=curData.totalQty!=null?curData.totalQty:(curData.units?.['片']!=null?curData.units['片']:(s?.dong?.qty||0));
- const shippedQty=curData.shippedQty!=null?curData.shippedQty:(curData.shippedUnits?.['片']||0);
+ const shippedQty=(curData.shippedUnits?.['片']!=null?curData.shippedUnits['片']:(curData.shippedQty||0));
  const shippedNet=curData.shippedNet||0;
  const shippedRate=curData.shippedRate!=null?curData.shippedRate:(qty>0?Math.round((shippedQty/qty)*1000)/10:0);
  const clients=curData.topCustomers||curData.clients||[];
@@ -6027,28 +6100,28 @@ function getDongDecision(summaryObj){
 
  return {
   id:'dong',
-  title:'東澤指定客戶物料單桃園區追蹤',
-  evidence:`${scope}東澤分析範圍合計淨額 ${money(net)}，毛利 ${money(margin)}（毛利率 ${gm.toFixed(2)}%）；訂購數量 ${fmt(qty)} 片，已出貨 ${fmt(shippedQty)} 片（出貨達成率 ${shippedRate.toFixed(1)}%）。`,
-  action:'依 7 區與 3 大中類檢視採購與出貨進度；對低於目標毛利或未出貨之案件，逐戶確認規格、折讓與排程。',
+  title:'東澤營運與客戶追蹤',
+  evidence:`${scope}東澤整合出貨淨額 ${money(net)}，毛利 ${money(margin)}（毛利率 ${gm.toFixed(2)}%）；訂購需求 ${fmt(qty)} 片，已出貨履約 ${fmt(shippedQty)} 片。`,
+  action:'依五大分區與 3 大中類檢視需求與出貨進度；低於目標毛利或未出貨案件，逐案確認規格、報價與排程。',
   owner:'東澤專案業務主管＋出貨窗口',
-  check:'建議 7 日內確認待出貨案件及低毛利訂單原因；次月追蹤分區出貨達成率與毛利率穩定度。',
-  missing:'限定物料訂購單與 7 區特定客戶名單（桃J排除9戶，無汐止排除）；出貨採計至查詢截止日。零淨額訂單毛利率標示為不適用。',
+  check:'建議 7 日內確認待出貨案件及低毛利訂單原因；追蹤分區出貨達成率與毛利率穩定度。',
+  missing:'全面納入中類「東澤、東澤特規、東澤特規+」（含物料與製品訂購單，排除分公司）；出貨履約計至查詢截止日。',
   rows:lowGmClients.slice(0,5).map(c=>[c.name,money(c.net)+' / '+(c.unit_str || (c.units?.['片'] ? fmt(c.units['片'])+' 片' : (c.qty!=null?fmt(c.qty)+' 片':'-'))),(c.gm!=null?c.gm.toFixed(2)+'%':'不適用')+`（毛利 ${money(c.margin)}）`]),
   headers:['查核客戶','訂單淨額 / 數量','毛利率 / 毛利額'],
-  drillMonth:(isWeek?(summaryObj.key || selected):mk),
+  drillMonth:((isWeek||isDay)?(summaryObj.key || selected):mk),
   cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))
  };
 }
 
 function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全部', activeTab='combined', sortKey='net', searchKey=''){
  const annual=(mode==='ytd');
- const scopeName=annual?'2026 YTD':(mode==='week'?`${drillMonth} 週`:`${drillMonth} 管理月`);
+ const scopeName=annual?'2026 YTD':(mode==='week'?`${drillMonth} 週`:(mode==='day'?`${drillMonth} 日`:`${drillMonth} 管理月`));
  const dzSource=(typeof DONG_DRILLDOWN!=='undefined'?DONG_DRILLDOWN:(typeof window!=='undefined'?window.DONG_DRILLDOWN:null))||{};
- const dPool=dzSource[annual?'ytd':(mode==='week'?'week':'month')]||{};
+ const dPool=dzSource[annual?'ytd':(mode==='week'?'week':(mode==='day'?'day':'month'))]||{};
  const curKey=annual?(drillMonth in dPool?drillMonth:'2026-11'):drillMonth;
  const cur=dPool[curKey]||null;
  const combSource=(typeof DONG_COMBINED_DRILLDOWN!=='undefined'?DONG_COMBINED_DRILLDOWN:(typeof window!=='undefined'?window.DONG_COMBINED_DRILLDOWN:null))||{};
- const cPool=combSource[annual?'ytd':(mode==='week'?'week':'month')]||{};
+ const cPool=combSource[annual?'ytd':(mode==='week'?'week':(mode==='day'?'day':'month'))]||{};
  const curComb=cPool[curKey]||null;
 
  if(!cur && !curComb){
@@ -6175,8 +6248,16 @@ function renderDongDrilldownHtml(mode, drillMonth, cutoffDate, filterRegion='全
          本表已整合「物料訂購單」與「製品訂購單」。同一客戶同時採購兩類商品者，訂單金額與毛利額已依來源明細嚴格加總，<b>毛利率依加總金額重新計算（毛利 ÷ 淨額）</b>，絕無加總毛利率之情事。數量單位「片」與「個」嚴格分開呈現。
        </div>
        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:12px;">
-         <span><b>物料合計：</b>淨額 ${money(curComb.materialSummary?.net ?? 0)}｜毛利 ${money(curComb.materialSummary?.margin ?? 0)} (${curComb.materialSummary?.gm!=null?curComb.materialSummary.gm.toFixed(2):'-'}%)｜數量 ${fmt(curComb.materialSummary?.qty ?? curComb.materialSummary?.units?.['片'] ?? 0)} 片</span>
-         <span><b>製品合計：</b>淨額 ${money(curComb.productSummary?.net ?? 0)}｜毛利 ${money(curComb.productSummary?.margin ?? 0)} (${curComb.productSummary?.gm!=null?curComb.productSummary.gm.toFixed(2):'-'}%)｜數量 ${(curComb.productSummary?.units?.['片']?fmt(curComb.productSummary.units['片'])+' 片':'') + (curComb.productSummary?.units?.['個']?(curComb.productSummary?.units?.['片']?' ＋ ':'')+fmt(curComb.productSummary.units['個'])+' 個':'') || '-'}</span>
+         ${(() => {
+          const _prodSrc = (typeof DONG_PRODUCT_DRILLDOWN!=='undefined'?DONG_PRODUCT_DRILLDOWN:(typeof window!=='undefined'?window.DONG_PRODUCT_DRILLDOWN:null))||{};
+          const _pPool = _prodSrc[annual?'ytd':(mode==='week'?'week':(mode==='day'?'day':'month'))]||{};
+          const _pCur = _pPool[curKey] || null;
+          const _ms = curComb.materialSummary || (cur ? { net: cur.totalNet, margin: cur.totalMargin, gm: cur.totalGm, qty: (cur.shippedUnits?.['片'] != null ? cur.shippedUnits['片'] : (cur.shippedQty || cur.units?.['片'] || 0)), units: cur.shippedUnits || cur.units } : {});
+          const _ps = curComb.productSummary || (_pCur ? { net: _pCur.totalNet, margin: _pCur.totalMargin, gm: _pCur.totalGm, units: _pCur.shippedUnits || _pCur.units } : {});
+          const _pUnitStr = ((_ps.units?.['片']?fmt(_ps.units['片'])+' 片':'') + (_ps.units?.['個']?(_ps.units?.['片']?' ＋ ':'')+fmt(_ps.units['個'])+' 個':'')) || '-';
+          return `<span><b>物料合計：</b>淨額 ${money(_ms.net ?? 0)}｜毛利 ${money(_ms.margin ?? 0)} (${_ms.gm!=null?_ms.gm.toFixed(2):'-'}%)｜數量 ${fmt(_ms.qty ?? _ms.units?.['片'] ?? 0)} 片</span>
+         <span><b>製品合計：</b>淨額 ${money(_ps.net ?? 0)}｜毛利 ${money(_ps.margin ?? 0)} (${_ps.gm!=null?_ps.gm.toFixed(2):'-'}%)｜數量 ${_pUnitStr}</span>`;
+         })()}
        </div>
      </div>
      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;background:#f8fafc;border:1px solid #e2e8f0;padding:8px 12px;border-radius:6px;">
@@ -7063,7 +7144,7 @@ const priorOpen=openImprove;openImprove=function(id){
 
  const extraNoteHtml=d.extraNote?`<div class="callout" style="margin-top:8px"><b>查核方式：</b>${esc(d.extraNote)}</div>`:'';
 
- const drillMonth=(mode==='week')?(summaryObj.key||selected):(d.drillMonth||d.customerMonth||d.newCustMonth||mgmtKey(summaryObj.s?.end || summaryObj.key || selected));
+ const drillMonth=(mode==='week'||mode==='day')?(summaryObj.key||selected):(d.drillMonth||d.customerMonth||d.newCustMonth||mgmtKey(summaryObj.s?.end || summaryObj.key || selected));
 
  const equipMonth=(typeof EQUIP!=='undefined'&&EQUIP[drillMonth])?drillMonth:'2026-09';
 

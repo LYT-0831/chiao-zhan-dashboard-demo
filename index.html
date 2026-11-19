@@ -114,7 +114,7 @@ main{padding:14px 12px 40px}.block{background:#fff;border:1px solid var(--line);
 
 </style></head><body>
 
-<header><div class="wrap"><div class="brand-row"><div class="brand">巧展實業｜董事長營運洞察</div><div class="badge" id="sourceBadge">動態管線接入版｜最新 2026/10/25</div></div><h1 id="title"></h1><div class="period" id="period"></div><div class="controls"><div class="datebox"><button id="prevBtn">‹</button><input id="datePicker" type="date"><span id="weekdayBadge" class="weekday-badge weekday"></span><button id="nextBtn">›</button></div><div class="switch"><button class="mode active" data-mode="day">日</button><button class="mode" data-mode="week">週</button><button class="mode" data-mode="month">月</button><button class="mode" data-mode="ytd">YTD</button></div></div>
+<header><div class="wrap"><div class="brand-row"><div class="brand">巧展實業｜董事長營運洞察</div><div class="badge" id="sourceBadge">動態管線接入版｜最新 2026/10/25</div></div><h1 id="title"></h1><div class="period" id="period"></div><div class="controls"><div class="datebox"><button id="prevBtn">‹</button><input id="datePicker" type="date"><span id="weekdayBadge" class="weekday-badge weekday"></span><button id="nextBtn">›</button></div><div class="switch"><button class="mode" data-mode="day">日</button><button class="mode" data-mode="week">週</button><button class="mode active" data-mode="month">月</button><button class="mode" data-mode="ytd">YTD</button></div></div>
 
 <div id="monthCompareBar" style="display:none;margin-top:10px;padding:8px 14px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;align-items:center;gap:14px;flex-wrap:wrap;">
 
@@ -250,11 +250,11 @@ const SIGN={"2026-01": {"total": 50630, "manager": 7870, "onsite": 42760, "manag
 
 const DYN=typeof window!=='undefined'&&window.DYNAMIC_DASHBOARD?window.DYNAMIC_DASHBOARD:null;
 
-const EARLIEST=DYN?.earliestDate||'2025-12-26',LATEST=DYN?.maxDate||'2026-11-10';let mode='month';
+const EARLIEST=DYN?.earliestDate||'2025-12-26',LATEST=DYN?.maxDate||'2026-11-10';let mode='month'; window.mode=mode;
 
 const $=id=>document.getElementById(id);const pad=n=>String(n).padStart(2,'0');
 
-function parseLocal(s){if(!s||typeof s!=='string')return new Date(NaN);const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+function parseLocal(s){if(!s||typeof s!=='string')return new Date(NaN);const parts=s.includes('-')?s.split('-'):(s.includes('/')?s.split('/'):[]);if(parts.length!==3)return new Date(NaN);const [y,m,d]=parts.map(Number);if(isNaN(y)||isNaN(m)||isNaN(d))return new Date(NaN);return new Date(y,m-1,d)}
 
 function localYMD(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
 
@@ -1801,8 +1801,9 @@ function getMergedDormantData(dormSource, selectedBranches, is6mFocus, currentKe
 
   let pool = dormSource;
   if (dormSource.modes && dormSource.modes.baseline) {
-    const ck = currentKey || (typeof picker !== 'undefined' && picker && picker.value && picker.value >= '2026-10' ? picker.value.slice(0, 7) : '2026-10');
-    pool = dormSource.modes.baseline[ck] || dormSource.modes.baseline['default'] || dormSource;
+    const ck = currentKey || (typeof picker !== 'undefined' && picker && picker.value ? picker.value : '2026-10');
+    const mKey = (typeof ck === 'string' && ck.length === 10) ? ck.slice(0, 7) : ck;
+    pool = dormSource.modes.baseline[ck] || dormSource.modes.baseline[mKey] || dormSource.modes.baseline['default'] || dormSource;
   }
 
   const branches = (selectedBranches && selectedBranches.length) ? selectedBranches : FIVE_BRANCH_LIST;
@@ -2544,6 +2545,25 @@ function updateMonthCompareBarUI(){
 
 function render(){
 
+  // 同步模式按鈕外觀與底層 mode 變數
+  document.querySelectorAll('.mode').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+
+  // 日模式與週模式資料載入中防護：資料未載入前絕不渲染為 0 元或假無資料
+  if ((mode === 'day' || mode === 'week') && !(window.__LOADED_DATA_BUNDLES && window.__LOADED_DATA_BUNDLES[mode])) {
+    const modeZh = mode === 'day' ? '日模式' : '週模式';
+    if ($('overviewContent')) $('overviewContent').innerHTML = `<div class="callout" style="background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;padding:24px;text-align:center;"><div style="font-weight:bold;font-size:16px;margin-bottom:8px;">⏳ 正在載入「${modeZh}」完整明細資料...</div><div style="font-size:12px;color:#64748b;">資料載入完成後將自動呈現所選期間數據，請稍候。</div></div>`;
+    if ($('customerContent')) $('customerContent').innerHTML = `<div class="warn">「${modeZh}」明細資料載入中，請稍候...</div>`;
+    if ($('productContent')) $('productContent').innerHTML = `<div class="warn">「${modeZh}」明細資料載入中，請稍候...</div>`;
+    if ($('newContent')) $('newContent').innerHTML = `<div class="warn">「${modeZh}」明細資料載入中，請稍候...</div>`;
+    if ($('dongContent')) $('dongContent').innerHTML = `<div class="warn">「${modeZh}」明細資料載入中，請稍候...</div>`;
+    if ($('dormantContent')) $('dormantContent').innerHTML = `<div class="warn">「${modeZh}」明細資料載入中，請稍候...</div>`;
+    if ($('shipContent')) $('shipContent').innerHTML = `<div class="warn">「${modeZh}」明細資料載入中，請稍候...</div>`;
+    if ($('signoffContent')) $('signoffContent').innerHTML = `<div class="warn">「${modeZh}」明細資料載入中，請稍候...</div>`;
+    return;
+  }
+
   updateMonthCompareBarUI();
 
   syncBranchVariables();
@@ -3165,6 +3185,14 @@ function render(){
 
   if($('dormantContent')){
 
+    // 8/25 前為基準日確立前，不溯及套用未來基準名單
+    if (mode === 'day' && selected < '2026-08-25') {
+      $('dormantContent').innerHTML = `<div class="callout" style="background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:13px;line-height:1.7;">
+        <b>📅 沉睡名單基準說明：</b>巧展久未交易客戶基準清單係於 <b>2026/08/25</b> 正式核定（共 268 戶）。所選日期（<b>${fmtDate(selected)}</b>）早於基準核定日，依規定不溯及套用未來基準名單；請選擇 <b>2026/08/25 以後</b> 之日期檢視動態回流追蹤。
+      </div>`;
+      return;
+    }
+
     const dormBranchBtnHtml = renderMultiRegionSelectorHtml('dormant', currentDormantBranches, { is6mFocus: currentDormantIs6m });
 
     const dormDrillSource = (typeof DORMANT_CUSTOMER_DRILLDOWN!=='undefined'?DORMANT_CUSTOMER_DRILLDOWN:(typeof window!=='undefined'?window.DORMANT_CUSTOMER_DRILLDOWN:null));
@@ -3410,10 +3438,17 @@ function render(){
     let shipCalloutHtml = '';
 
     const snapDateStr = snapshotDate ? fmtDate(snapshotDate).slice(5) : '-';
-    if (mode === 'day' && window.UNSHIPPED_DRILLDOWN?.day?.[key]) {
-      shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:12px;"><b>ℹ️ 即時存量快照說明：</b>完工未出貨為選定當日（快照基準日 ${snapDateStr}）之即時完工未出貨存量快照（排除庫存生產單），非月末彙總推估。</div>`;
-    } else if (mode === 'day' || mode === 'week') {
-      shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:12px;"><b>ℹ️ 時點存量說明：</b>完工未出貨為管理月期末／最新結算快照（快照基準日 ${snapDateStr}），所選日期（${fmtDate(selected).slice(5)}）顯示所屬管理月之結算存量，非選定當天之即時存量。</div>`;
+    const hasActualDaySnapshot = (mode === 'day' && Boolean(window.UNSHIPPED_DRILLDOWN?.day?.[key]));
+
+    if (hasActualDaySnapshot) {
+      shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;font-size:12px;"><b>ℹ️ 當日即時存量快照：</b>完工未出貨為選定當日（快照基準日 ${snapDateStr}）之即時完工未出貨存量快照（排除庫存生產單），非月末彙總推估。</div>`;
+    } else if (mode === 'day') {
+      // 嚴格遵守：非快照日絕不把期末存量混充為當日 KPI，亦不顯示假 0
+      shipCalloutHtml = `<div class="callout" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;font-size:12px;line-height:1.7;">
+        <b>📌 完工未出貨歷史快照說明：</b>所選日期（<b>${fmtDate(selected)}</b>）未建立單日即時未出貨存量快照。為恪遵資料真實性，系統<b>不以 0 工單（假性無存量）呈現</b>，亦<b>不直接將月末期末存量混充為當日 KPI</b>。右側提供所屬 <b>${esc(shipMonthKey)} 管理月結算日（${snapDateStr}）</b>之期末結算存量作為規模參考。
+      </div>`;
+    } else if (mode === 'week') {
+      shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:12px;"><b>ℹ️ 時點存量說明：</b>週模式完工未出貨為所屬管理月期末結算快照（快照基準日 ${snapDateStr}），時點存量不跨日加總累計。</div>`;
     } else if (mode === 'ytd') {
       shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:12px;"><b>ℹ️ 時點存量說明：</b>YTD 完工未出貨顯示最新期末結算快照（快照基準日 ${snapDateStr}），時點存量不跨月加總累計。</div>`;
     } else if (mode === 'month') {
@@ -3452,7 +3487,25 @@ function render(){
       }
     }
 
-    $('shipContent').innerHTML = `${shipBranchBtnHtml}
+    if (mode === 'day' && !hasActualDaySnapshot) {
+      $('shipContent').innerHTML = `${shipBranchBtnHtml}
+<div class="kpis">
+  <div class="kpi">
+    <small>${shipRegionNote}單日完工未出貨</small>
+    <b style="color:#64748b;font-size:22px;">未建單日快照</b>
+    <div class="note" style="color:#b91c1c;font-weight:bold;">非即時深度快照日</div>
+    <div class="note" style="margin-top:2px;font-size:11px;color:#64748b;">不以假 0 或月末存量混充</div>
+  </div>
+  <div class="kpi">
+    <small>所屬管理月期末參考</small>
+    <b class="blue">${fmt(u.completedUnshippedWorkOrders)} 工單</b> <span style="font-size:12px;color:#64748b;">(${fmt(u.orders)} 訂單)</span>
+    <div class="note">參考快照日：<b>${snapDateStr}</b>（${esc(shipMonthKey)} 期末結算）</div>
+    <div class="note" style="margin-top:2px;font-size:11px;color:#64748b;">期末未出總額 ${money(u.completedUnshippedAmt)}</div>
+  </div>
+</div>
+${shipCalloutHtml}`;
+    } else {
+      $('shipContent').innerHTML = `${shipBranchBtnHtml}
 <div class="kpis">
   <div class="kpi">
     <small>${shipRegionNote}完工未出貨${snapshotDate ? `（快照基準日 ${fmtDate(snapshotDate).slice(5)}）` : ''}</small>
@@ -3472,6 +3525,7 @@ function render(){
   <b>完工未出貨定案口徑（選項 A）：</b>統計基準為截至快照日（${esc(snapshotDate || '-')}）已完工、尚未出貨且排除庫存生產單之全部工單。主指標完工未出金額 <b>${money(u.completedUnshippedAmt)}</b>；管理分類：已到期未出貨 <b>${u.dueWorkOrders ?? 0} 工單</b>（<b>${money(u.dueAmt ?? 0)}</b>）、提前完工備料 <b>${u.earlyWorkOrders ?? 0} 工單</b>（<b>${money(u.earlyAmt ?? 0)}</b>）；零淨額工單共 <b>${u.zeroWorkOrders} 張</b> 保留供核對。
 </div>
 ${shipCalloutHtml}`;
+    }
 
 
 
@@ -3728,8 +3782,6 @@ const picker=$('datePicker');
 
 picker.value=LATEST;picker.min=EARLIEST;picker.max=LATEST;
 
-picker.addEventListener('change',render);
-
 const _modeBundlePromises = {};
 let _modeSwitchSeq = 0;
 
@@ -3772,6 +3824,37 @@ function ensureModeDataLoaded(targetMode) {
 }
 window.ensureModeDataLoaded = ensureModeDataLoaded;
 
+
+
+async function onDateOrPeriodChange() {
+  const targetMode = mode;
+  if ((targetMode === 'day' || targetMode === 'week') && !(window.__LOADED_DATA_BUNDLES && window.__LOADED_DATA_BUNDLES[targetMode])) {
+    const mySeq = ++_modeSwitchSeq;
+    const modeZh = targetMode === 'day' ? '日模式' : '週模式';
+    showDataLoadingOverlay(true, `正在載入「${modeZh}」完整明細資料，請稍候...`);
+    try {
+      await ensureModeDataLoaded(targetMode);
+    } catch (err) {
+      if (mySeq === _modeSwitchSeq) {
+        showDataLoadingOverlay(false);
+        alert(err.message || '載入資料失敗，請重新整理頁面後再試。');
+      }
+      return;
+    }
+    if (mySeq !== _modeSwitchSeq) return;
+    showDataLoadingOverlay(false);
+  }
+  render();
+}
+window.onDateOrPeriodChange = onDateOrPeriodChange;
+
+picker.addEventListener('change', onDateOrPeriodChange);
+picker.addEventListener('input', () => {
+  if (picker.value && picker.value.length === 10) {
+    onDateOrPeriodChange();
+  }
+});
+
 async function switchModeSafely(targetMode) {
   const mySeq = ++_modeSwitchSeq;
   const needLoad = (targetMode === 'day' || targetMode === 'week') && !(window.__LOADED_DATA_BUNDLES && window.__LOADED_DATA_BUNDLES[targetMode]);
@@ -3791,7 +3874,7 @@ async function switchModeSafely(targetMode) {
     showDataLoadingOverlay(false);
   }
   document.querySelectorAll('.mode').forEach(x => x.classList.toggle('active', x.dataset.mode === targetMode));
-  mode = targetMode;
+  mode = targetMode; window.mode = targetMode;
   render();
 }
 window.switchModeSafely = switchModeSafely;
@@ -3800,9 +3883,9 @@ document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{
   switchModeSafely(b.dataset.mode);
 }));
 
-$('prevBtn').onclick=()=>{let d=parseLocal(picker.value);d.setDate(d.getDate()-1);picker.value=effectiveDate(localYMD(d));render()};
+$('prevBtn').onclick=()=>{let d=parseLocal(picker.value);d.setDate(d.getDate()-1);picker.value=effectiveDate(localYMD(d));onDateOrPeriodChange();};
 
-$('nextBtn').onclick=()=>{let d=parseLocal(picker.value);d.setDate(d.getDate()+1);let max=parseLocal(picker.max);if(d>max)d=max;picker.value=localYMD(d);render()};
+$('nextBtn').onclick=()=>{let d=parseLocal(picker.value);d.setDate(d.getDate()+1);let max=parseLocal(picker.max);if(d>max)d=max;picker.value=localYMD(d);onDateOrPeriodChange();};
 
 render();
 

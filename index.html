@@ -1000,7 +1000,13 @@ function tag(t,c){return `<span class="tag ${c}">${t}</span>`}
 
 function rateClass(r){return r>=100?'green':r<80?'red':'orange'}
 
-function signMonthKeyFromSummary(s){return mgmtKey(s?.end || selected)}
+function signMonthKeyFromSummary(s){return mgmtKey(s?.end || s?.start || (typeof selected !== 'undefined' ? selected : (document.getElementById('datePicker')?.value || '2026-10-25')))}
+
+function isVerifiedDaySnapshot(dKey){
+  // 10/26 為 10/25 期末存量延續推定，無獨立訂單與出貨變動，排除作為獨立日快照呈現具體 KPI
+  if(dKey === '2026-10-26') return false;
+  return Boolean(typeof window !== 'undefined' && window.UNSHIPPED_DRILLDOWN?.day?.[dKey]);
+}
 
 function signYtd(key){
 
@@ -2797,11 +2803,12 @@ function render(){
 
     let c=p&&p.dong?pct(p.dong.qty,s.dong.qty):null;
 
-    items.push(`${tag('東澤','purple')}<strong>指定客戶訂購 ${uStr}、淨額 ${wan(s.dong.sales)}</strong>${c===null?'':`；片數較前期${c>=0?'增加':'減少'} ${Math.abs(c).toFixed(1)}%`}`);
+    items.push(`${tag('東澤','purple')}<strong>${mode==='day'?'當日':(mode==='week'?'當週':'當期')}訂購 ${uStr}、實際出貨淨額 ${wan(s.dong.sales)}</strong>${c===null?'':`；片數較前期${c>=0?'增加':'減少'} ${Math.abs(c).toFixed(1)}%`}`);
 
   }
 
-  if(s?.unshipped){
+  const hasValidSnapSummary = (mode === 'day' ? isVerifiedDaySnapshot(key) : (mode === 'week' ? Boolean(window.UNSHIPPED_DRILLDOWN?.week?.[key]) : true));
+  if((mode === 'month' || mode === 'ytd' || hasValidSnapSummary) && s?.unshipped){
 
     let ch=(p&&p.unshipped)?s.unshipped.order_count-p.unshipped.order_count:null;
 
@@ -2901,7 +2908,21 @@ function render(){
 
 
 
-  if(mode==='day'||mode==='week')$('targetContent').innerHTML='<div class="warn"><b>目標達成不在日／週模式下判讀。</b>巧展目標以管理月與 YTD 為主，請切換「月」或「YTD」。</div>';
+  if(mode==='day'||mode==='week'){
+    $('targetContent').innerHTML=`
+      <div class="callout" style="background:#f8fafc;border:1px solid #cbd5e1;padding:20px;text-align:center;">
+        <div style="font-weight:bold;font-size:15px;color:#1e293b;margin-bottom:6px;">
+          🎯 營業與目標達成不在${mode==='day'?'單日':'單週'}模式下判讀
+        </div>
+        <div style="font-size:13px;color:#64748b;line-height:1.7;max-width:600px;margin:0 auto;">
+          巧展官方營業實績與各版本營業目標均以<b>完整管理月</b>及 <b>YTD 年度</b>為核定基準，不拆分為單日或單週目標。<br>
+          如需查閱各區實績與原目標、127+8%、調整後目標達成率，請切換至<b>「月模式」</b>或<b>「YTD」</b>。
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn" onclick="setMode('month')" style="padding:5px 14px;background:#153e72;color:#fff;border-radius:4px;cursor:pointer;font-size:12px;">切換至月模式查看目標達成</button>
+        </div>
+      </div>`;
+  }
 
   else{
 
@@ -2914,7 +2935,7 @@ function render(){
 
     for(const name of ['原目標','127+8%完整目標','調整後目標']){
 
-      const x=obj[name];if(!x)continue;
+      const x=obj[name]||(name==='原目標'?obj['目標']:(name==='127+8%完整目標'?obj['127+8%目標']:null));if(!x)continue;
 
       let r=mode==='month'?x.rate:x.ytd_rate,act=mode==='month'?x.actual:x.ytd_actual,tar=mode==='month'?x.target:x.ytd_target;
 
@@ -3186,12 +3207,13 @@ function render(){
   if($('dormantContent')){
 
     // 8/25 前為基準日確立前，不溯及套用未來基準名單
-    if (mode === 'day' && selected < '2026-08-25') {
+    const isDormPreBaseline = (mode === 'day' && selected < '2026-08-25') || (mode === 'week' && (s?.end || selected) < '2026-08-25');
+    if (isDormPreBaseline) {
+      const viewDateStr = (mode === 'day') ? fmtDate(selected) : (s?.label || key);
       $('dormantContent').innerHTML = `<div class="callout" style="background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:13px;line-height:1.7;">
-        <b>📅 沉睡名單基準說明：</b>巧展久未交易客戶基準清單係於 <b>2026/08/25</b> 正式核定（共 268 戶）。所選日期（<b>${fmtDate(selected)}</b>）早於基準核定日，依規定不溯及套用未來基準名單；請選擇 <b>2026/08/25 以後</b> 之日期檢視動態回流追蹤。
+        <b>📅 沉睡名單基準說明：</b>巧展久未交易客戶基準清單係於 <b>2026/08/25</b> 正式核定（共 268 戶）。所選期間（<b>${viewDateStr}</b>）早於基準核定日，依規定不溯及套用未來基準名單；請選擇 <b>2026/08/25 以後</b> 之日期或週別檢視動態回流追蹤。
       </div>`;
-      return;
-    }
+    } else {
 
     const dormBranchBtnHtml = renderMultiRegionSelectorHtml('dormant', currentDormantBranches, { is6mFocus: currentDormantIs6m });
 
@@ -3404,7 +3426,26 @@ function render(){
         pendingTable=`<div class="callout" style="margin-top:14px;background:#fff7ed;border:1px solid #fed7aa;color:#c2410c;"><b>${regionNote} 基準日後已重新下單待出貨名單（共 ${pendingCount} 戶，已下單尚未出貨，待實際出貨後列入回流）：</b></div><table><thead><tr><th>客戶名稱</th><th class="num">基準狀態</th><th class="num">待出貨訂單</th><th>下單日期</th></tr></thead><tbody>${pendingRows.map(r=>`<tr><td>${r.name}</td><td class="num">${r.tierStatus||r.baseStatus||'-'}</td><td class="num">${(r.pendingOrders||[]).length||1} 單待出</td><td>${(r.pendingOrders||[])[0]?.date||r.latestOrderDate||'-'}</td></tr>`).join('')}</tbody></table>`;
       }
 
-      $('dormantContent').innerHTML=`${dormBranchBtnHtml}<div class="kpis"><div class="kpi"><small>${regionNote} 久未交易客戶基準清單</small><b class="orange">${dCount}</b><div class="note">8/25 CSV 正式核定 268 戶（5大分區完整對齊）</div></div><div class="kpi"><small>${regionNote} 基準歷史貢獻</small><b class="orange">${dNet}</b><div class="note">歷史出貨毛利 ${dMargin}；以 CSV 基準唯讀保留</div></div><div class="kpi"><small>基準日後已回流出貨</small><b class="green">${obsCount} 戶</b><div class="note">依 8/25 後實際出貨認定</div></div><div class="kpi"><small>已重新下單（待出貨）</small><b class="orange">${pendingCount} 戶</b><div class="note">已有訂單尚未出貨，持續未交易 ${stillDormantCount} 戶</div></div></div><div class="compare"><div class="compare-card"><h3>2 個月未下單</h3><div class="big">${c2m}</div><div class="sub">先確認是否為正常採購週期。</div></div><div class="compare-card"><h3>3–4 個月未下單</h3><div class="big orange">${c34m}</div><div class="sub">進入優先關懷候選名單。</div></div><div class="compare-card"><h3>5 個月未下單</h3><div class="big red">${c5m}</div><div class="sub">未交易 5 個月，需優先關懷。</div></div><div class="compare-card" style="border-color:#fca5a5;background:#fff5f5;"><h3>6 個月以上未下單</h3><div class="big red">${c6m}</div><div class="sub">未交易 6 個月以上，優先確認流失或專案結束。</div><div style="margin-top:6px;"><button type="button" class="branch-btn" data-dormant-branch="6m_focus" style="font-size:11px;padding:3px 8px;border-radius:4px;background:#991b1b;color:#fff;border:none;cursor:pointer;">查看跨區集中 ${focus6mRows.length} 戶 →</button></div></div></div><div class="warn"><b>解讀提醒：</b>久未交易不直接等於流失，可能是正常採購週期、一次性專案或階段性採購。天數嚴格依最後實際出貨日認定。基準日後已實際出貨者計為回流出貨；已有新訂單但尚未出貨者獨立列為「已重新下單待出貨」，不直接判定為回流。區域分析範圍為台北、桃園、新竹、台南及大圖（2026年10月起桃H正式納入桃園分區，1～9月歷史管理月維持原口徑）；僅排除分公司。</div>${obsTable}${pendingTable}<div class="manage"><b>後續追蹤方式：</b>依「未交易時間＋歷史出貨營收＋歷史毛利」排序，列出高貢獻舊客名單；追蹤是否已回訪、原因分類、是否回流、回流金額。日／週模式不宜判讀舊客流失，主要以月與 YTD 追蹤。</div>`;
+      const dormCutoffDate = (mode === 'day') ? fmtDate(selected) : ((mode === 'week') ? fmtDate(s?.end || selected) : null);
+      const dormObsLabel = (mode === 'day') 
+        ? `截至 ${dormCutoffDate} 累計回流` 
+        : ((mode === 'week') 
+          ? `截至該週（${dormCutoffDate}）累計回流` 
+          : `基準日後已回流出貨`);
+      const dormObsNote = (mode === 'day')
+        ? `8/25 基準 268 戶・截至所選單日動態認定`
+        : ((mode === 'week')
+          ? `8/25 基準 268 戶・截至該週週末動態認定`
+          : `依 8/25 後實際出貨認定`);
+      const dormPendingLabel = (mode === 'day')
+        ? `截至 ${dormCutoffDate} 已下單（待出貨）`
+        : ((mode === 'week')
+          ? `截至該週已下單（待出貨）`
+          : `已重新下單（待出貨）`);
+
+      $('dormantContent').innerHTML=`${dormBranchBtnHtml}<div class="kpis"><div class="kpi"><small>${regionNote} 久未交易客戶基準清單</small><b class="orange">${dCount}</b><div class="note">8/25 CSV 正式核定 268 戶（5大分區完整對齊）</div></div><div class="kpi"><small>${regionNote} 基準歷史貢獻</small><b class="orange">${dNet}</b><div class="note">歷史出貨毛利 ${dMargin}；以 CSV 基準唯讀保留</div></div><div class="kpi"><small>${dormObsLabel}</small><b class="green">${obsCount} 戶</b><div class="note">${dormObsNote}</div></div><div class="kpi"><small>${dormPendingLabel}</small><b class="orange">${pendingCount} 戶</b><div class="note">已有訂單尚未出貨，持續未交易 ${stillDormantCount} 戶</div></div></div><div class="compare"><div class="compare-card"><h3>2 個月未下單</h3><div class="big">${c2m}</div><div class="sub">先確認是否為正常採購週期。</div></div><div class="compare-card"><h3>3–4 個月未下單</h3><div class="big orange">${c34m}</div><div class="sub">進入優先關懷候選名單。</div></div><div class="compare-card"><h3>5 個月未下單</h3><div class="big red">${c5m}</div><div class="sub">未交易 5 個月，需優先關懷。</div></div><div class="compare-card" style="border-color:#fca5a5;background:#fff5f5;"><h3>6 個月以上未下單</h3><div class="big red">${c6m}</div><div class="sub">未交易 6 個月以上，優先確認流失或專案結束。</div><div style="margin-top:6px;"><button type="button" class="branch-btn" data-dormant-branch="6m_focus" style="font-size:11px;padding:3px 8px;border-radius:4px;background:#991b1b;color:#fff;border:none;cursor:pointer;">查看跨區集中 ${focus6mRows.length} 戶 →</button></div></div></div><div class="warn"><b>解讀提醒：</b>久未交易不直接等於流失，可能是正常採購週期、一次性專案或階段性採購。天數嚴格依最後實際出貨日認定。基準日後已實際出貨者計為回流出貨；已有新訂單但尚未出貨者獨立列為「已重新下單待出貨」，不直接判定為回流。區域分析範圍為台北、桃園、新竹、台南及大圖（2026年10月起桃H正式納入桃園分區，1～9月歷史管理月維持原口徑）；僅排除分公司。</div>${obsTable}${pendingTable}<div class="manage"><b>後續追蹤方式：</b>依「未交易時間＋歷史出貨營收＋歷史毛利」排序，列出高貢獻舊客名單；追蹤是否已回訪、原因分類、是否回流、回流金額。日／週模式不宜判讀舊客流失，主要以月與 YTD 追蹤。</div>`;
+
+    }
 
     }
 
@@ -3438,7 +3479,7 @@ function render(){
     let shipCalloutHtml = '';
 
     const snapDateStr = snapshotDate ? fmtDate(snapshotDate).slice(5) : '-';
-    const hasActualDaySnapshot = (mode === 'day' && Boolean(window.UNSHIPPED_DRILLDOWN?.day?.[key]));
+    const hasActualDaySnapshot = (mode === 'day' && isVerifiedDaySnapshot(key));
 
     if (hasActualDaySnapshot) {
       shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;font-size:12px;"><b>ℹ️ 當日即時存量快照：</b>完工未出貨為選定當日（快照基準日 ${snapDateStr}）之即時完工未出貨存量快照（排除庫存生產單），非月末彙總推估。</div>`;
@@ -3487,23 +3528,29 @@ function render(){
       }
     }
 
-    if (mode === 'day' && !hasActualDaySnapshot) {
+    const hasActualWeekSnapshot = (mode === 'week' && Boolean(window.UNSHIPPED_DRILLDOWN?.week?.[key]));
+    const hasSnapshot = (mode === 'day') ? hasActualDaySnapshot : ((mode === 'week') ? hasActualWeekSnapshot : true);
+
+    if ((mode === 'day' || mode === 'week') && !hasSnapshot) {
+      const viewLabelStr = (mode === 'day') ? fmtDate(selected) : (s?.label || key);
       $('shipContent').innerHTML = `${shipBranchBtnHtml}
-<div class="kpis">
-  <div class="kpi">
-    <small>${shipRegionNote}單日完工未出貨</small>
-    <b style="color:#64748b;font-size:22px;">未建單日快照</b>
-    <div class="note" style="color:#b91c1c;font-weight:bold;">非即時深度快照日</div>
-    <div class="note" style="margin-top:2px;font-size:11px;color:#64748b;">不以假 0 或月末存量混充</div>
+<div class="callout" style="background:#f8fafc;border:1px solid #cbd5e1;padding:20px;line-height:1.7;">
+  <div style="font-weight:bold;font-size:15px;color:#334155;margin-bottom:6px;">
+    📌 完工未出貨時點快照說明
   </div>
-  <div class="kpi">
-    <small>所屬管理月期末參考</small>
-    <b class="blue">${fmt(u.completedUnshippedWorkOrders)} 工單</b> <span style="font-size:12px;color:#64748b;">(${fmt(u.orders)} 訂單)</span>
-    <div class="note">參考快照日：<b>${snapDateStr}</b>（${esc(shipMonthKey)} 期末結算）</div>
-    <div class="note" style="margin-top:2px;font-size:11px;color:#64748b;">期末未出總額 ${money(u.completedUnshippedAmt)}</div>
+  <div style="font-size:13px;color:#64748b;">
+    完工未出貨庫存依 ERP 規範僅於<b>管理月期末結算日（每月 25 日）</b>或特定驗證日建立深度保存快照。<br>
+    所選期間（<b>${viewLabelStr}</b>）尚無經驗證的完工未出貨時點快照。<br>
+    依誠實揭露原則<b>不提供單日／單週庫存統計，亦不以假 0 或跨期存量冒充當期 KPI</b>。<br>
+    如需查閱完整工單清單與等待天數，請切換至<b>「月模式」</b>檢視月末歷史存量。
+  </div>
+  <div style="margin-top:12px;">
+    <button class="btn" onclick="setMode('month')" style="padding:5px 14px;background:#153e72;color:#fff;border-radius:4px;cursor:pointer;font-size:12px;">切換至月模式查看完工未出貨</button>
   </div>
 </div>
-${shipCalloutHtml}`;
+<div style="margin-top:10px;font-size:12px;color:#64748b;background:#fff;border:1px dashed #cbd5e1;padding:10px 14px;border-radius:6px;">
+  <b>【參考資訊】</b>所屬管理月（${esc(shipMonthKey)}）期末（${snapDateStr} 快照）存量為 <b>${fmt(u.completedUnshippedWorkOrders)} 工單</b>（金額 <b>${money(u.completedUnshippedAmt)}</b>）。此為月末結算參考，非所選期間之實際時點存量。
+</div>`;
     } else {
       $('shipContent').innerHTML = `${shipBranchBtnHtml}
 <div class="kpis">
@@ -3552,9 +3599,13 @@ ${shipCalloutHtml}`;
 
   let updateCutoff = DYN?.sourcesMeta?.signoff?.latest ? fmtDate(DYN.sourcesMeta.signoff.latest).slice(5) : ((typeof LATEST !== 'undefined' && LATEST) ? fmtDate(LATEST).slice(5) : '11/10');
 
-  const signoffTableNote = (mode === 'day') ? '<div class="manage" style="margin-top:6px;"><b>顯示說明：</b>簽核分析表格依月度彙總，呈現整體簽核流程效率趨勢；上方指標卡為選定當日之出貨與折讓即時數值。</div>' : '';
-  const signoffTableTh = (mode === 'day') ? '月份（月度歷史趨勢）' : '月份';
-  $('signoffContent').innerHTML=`<div class="kpis"><div class="kpi"><small>${modeText}總簽核</small><b>${fmt(signTotal)}</b><div class="note">筆</div></div><div class="kpi"><small>現場帳號簽核</small><b class="green">${signOnsiteShare.toFixed(2)}%</b><div class="note">${fmt(signOnsite)} 筆</div></div><div class="kpi"><small>副理帳號簽核</small><b class="orange">${signManagerShare.toFixed(2)}%</b><div class="note">${fmt(signManager)} 筆</div></div><div class="kpi"><small>資料更新狀態</small><b>截至 ${updateCutoff}</b><div class="note">支援日／週／月／YTD</div></div></div><div class="callout"><b>本期判讀：</b>${insight}</div><table><thead><tr><th>${signoffTableTh}</th><th class="num">總簽核</th><th class="num">現場占比</th><th class="num">副理占比</th></tr></thead><tbody>${signTrendRows(maxM)}</tbody></table>${signoffTableNote}<div class="manage"><b>帳號口徑：</b>admin、admin1、Dora 合併視為江副理帳號；其餘帳號列為現場簽核。每日簽核明細已全量動態重算。</div>`;
+  const signoffTableNote = (mode === 'day' || mode === 'week') 
+    ? `<div style="margin-top:14px;padding:8px 12px;background:#f8fafc;border-left:3px solid #6366f1;font-size:12px;color:#475569;">
+        <b>📌 月度歷史簽核趨勢參考：</b>下方表格呈現全公司 1～10 月度整體簽核趨勢，非所選${mode==='day'?'單日':'單週'}數據。${mode==='day'?'單日':'單週'}統計請以上方 KPI 卡片為準。
+       </div>`
+    : '';
+  const signoffTableTh = (mode === 'day' || mode === 'week') ? '月份（月度歷史趨勢參考）' : '月份';
+  $('signoffContent').innerHTML=`<div class="kpis"><div class="kpi"><small>${modeText}總簽核</small><b>${fmt(signTotal)}</b><div class="note">筆</div></div><div class="kpi"><small>現場帳號簽核</small><b class="green">${signOnsiteShare.toFixed(2)}%</b><div class="note">${fmt(signOnsite)} 筆</div></div><div class="kpi"><small>副理帳號簽核</small><b class="orange">${signManagerShare.toFixed(2)}%</b><div class="note">${fmt(signManager)} 筆</div></div><div class="kpi"><small>資料更新狀態</small><b>截至 ${updateCutoff}</b><div class="note">支援日／週／月／YTD</div></div></div><div class="callout"><b>本期判讀：</b>${insight}</div>${signoffTableNote}<table><thead><tr><th>${signoffTableTh}</th><th class="num">總簽核</th><th class="num">現場占比</th><th class="num">副理占比</th></tr></thead><tbody>${signTrendRows(maxM)}</tbody></table><div class="manage"><b>帳號口徑：</b>admin、admin1、Dora 合併視為江副理帳號；其餘帳號列為現場簽核。每日簽核明細已全量動態重算；無 SLA 違規口徑，不隨意加註違背結論。</div>`;
 
 
 
@@ -3628,7 +3679,24 @@ ${shipCalloutHtml}`;
 
   const equipTableHtml = renderEquipTableHtml(equipMonth, currentEquipView);
 
-  $('machineContent').innerHTML=`${(mode==='day')?'<div class="warn"><b>設備產能為月度結算數據，目前顯示所屬月份之機台稼動與產能分析。</b>日模式下不拆成單日推估。</div>':(mode==='week'?'<div class="warn"><b>設備與生產資料為月度彙總。</b>週模式下顯示所選日期所屬管理月的月度資料，不拆成單週。</div>':'')}${equipWarn}<div class="compare"><div class="compare-card"><h3>固定月產能最高達成</h3><div class="big red">${topEquip?.rate!=null?topEquip.rate.toFixed(2)+'%':'-'}</div><div class="sub">${topEquip?.code||''} ${topEquip?.name||''}</div></div><div class="compare-card"><h3>固定月產能較低代表</h3><div class="big orange">${low[0]?.rate!=null?low[0].rate.toFixed(2)+'%':'-'}</div><div class="sub">${low[0]?.code||''} ${low[0]?.name||''}</div></div><div class="compare-card"><h3>資料月份</h3><div class="big">${Number(equipMonth.slice(5))} 月</div><div class="sub">${isEquipMissing ? `${mkey}待提供；顯示${Number(equipMonth.slice(5))}月正式數據` : `設備實際產量已更新至 ${Number(equipMonth.slice(5))} 月`}</div></div></div><div class="warn"><b>設備解讀：</b>此為實際產量 ÷ 設定月產能之「固定月產能達成率」，不是稼動率，亦不同於依工作天數計算之理想產能（9月理想產能達成率為 86.11%）；已依管理要求排除 6 台非主要／輔助設備（L001、E003、E004、E005、F001、G004）。需搭配產能基準、排程、用途與停機情形判讀。</div>${equipTableHtml}<div class="callout" style="margin-top:14px"><b>製品四工序｜${Number(equipMonth.slice(5))} 月</b></div><table><thead><tr><th>工序</th><th class="num">加工數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${frows}</tbody></table><div class="callout" style="margin-top:14px"><b>大圖部各工序（${lfList.length} 工序）｜${Number(equipMonth.slice(5))} 月</b></div><table><thead><tr><th>工序</th><th class="num">加工數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${lfrows}</tbody><tfoot><tr style="font-weight:bold;background:#f8fafc;"><td>大圖部合計</td><td class="num">${fmtLf(lfTotQty)}</td><td class="num">${fmtLf(lfTotArea)}</td><td class="num">${lfTotQty > 0 ? (lfTotArea / lfTotQty).toFixed(2) : '-'}</td></tr></tfoot></table><div style="font-size:11px;color:#64748b;margin-top:4px;line-height:1.5;"><b>工序說明：</b>大圖部統一為 5 大正式工序（美工、大機輸出、小機輸出、UV輸出、後製）；後製採原始 Excel 獨立對帳去重數據（原生外勞總計列已含劉桂禎，嚴格杜絕重複累加）；平均才數分母嚴格依原始 Excel 數量欄（總才數 ÷ 加工數量）重新計算；王瑞昌生產紀錄已依正式核定規則全數歸入「後製」工序（1～8月有效納入，9～10月原始檔為 0 筆）。</div>`;
+  if (mode === 'day' || mode === 'week') {
+    $('machineContent').innerHTML = `
+      <div class="callout" style="background:#f8fafc;border:1px solid #cbd5e1;padding:24px;text-align:center;">
+        <div style="font-weight:bold;font-size:16px;color:#1e293b;margin-bottom:8px;">
+          📊 目前無${mode === 'day' ? '單日' : '單週'}設備與生產績效資料，請切換至月模式查看
+        </div>
+        <div style="font-size:13px;color:#64748b;line-height:1.8;max-width:650px;margin:0 auto;">
+          巧展設備實際產量、機台稼動與製品工序統計源自月度設備使用分析表，依<b>自然月（每月 1 日至當月底）</b>結算，與訂單之管理月口徑（每月 26 日至次月 25 日）不同，且依管理定案不拆分推估為單日或單週數據。<br>
+          如需查閱各機台固定月產能達成率、瓶頸分析與製品／大圖工序表，請切換至<b>「月模式」</b>查閱。
+        </div>
+        <div style="margin-top:14px;">
+          <button class="btn" onclick="setMode('month')" style="padding:6px 16px;background:#153e72;color:#fff;border-radius:6px;cursor:pointer;font-size:13px;">切換至月模式查看設備分析</button>
+        </div>
+      </div>
+    `;
+  } else {
+    $('machineContent').innerHTML=`${equipWarn}<div class="compare"><div class="compare-card"><h3>固定月產能最高達成</h3><div class="big red">${topEquip?.rate!=null?topEquip.rate.toFixed(2)+'%':'-'}</div><div class="sub">${topEquip?.code||''} ${topEquip?.name||''}</div></div><div class="compare-card"><h3>固定月產能較低代表</h3><div class="big orange">${low[0]?.rate!=null?low[0].rate.toFixed(2)+'%':'-'}</div><div class="sub">${low[0]?.code||''} ${low[0]?.name||''}</div></div><div class="compare-card"><h3>資料月份</h3><div class="big">${Number(equipMonth.slice(5))} 月</div><div class="sub">${isEquipMissing ? `${mkey}待提供；顯示${Number(equipMonth.slice(5))}月正式數據` : `設備實際產量已更新至 ${Number(equipMonth.slice(5))} 月`}</div></div></div><div class="warn"><b>設備解讀：</b>此為實際產量 ÷ 設定月產能之「固定月產能達成率」，不是稼動率，亦不同於依工作天數計算之理想產能（9月理想產能達成率為 86.11%）；已依管理要求排除 6 台非主要／輔助設備（L001、E003、E004、E005、F001、G004）。需搭配產能基準、排程、用途與停機情形判讀。</div>${equipTableHtml}<div class="callout" style="margin-top:14px"><b>製品四工序｜${Number(equipMonth.slice(5))} 月</b></div><table><thead><tr><th>工序</th><th class="num">加工數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${frows}</tbody></table><div class="callout" style="margin-top:14px"><b>大圖部各工序（${lfList.length} 工序）｜${Number(equipMonth.slice(5))} 月</b></div><table><thead><tr><th>工序</th><th class="num">加工數量</th><th class="num">總才數</th><th class="num">平均才數</th></tr></thead><tbody>${lfrows}</tbody><tfoot><tr style="font-weight:bold;background:#f8fafc;"><td>大圖部合計</td><td class="num">${fmtLf(lfTotQty)}</td><td class="num">${fmtLf(lfTotArea)}</td><td class="num">${lfTotQty > 0 ? (lfTotArea / lfTotQty).toFixed(2) : '-'}</td></tr></tfoot></table><div style="font-size:11px;color:#64748b;margin-top:4px;line-height:1.5;"><b>工序說明：</b>大圖部統一為 5 大正式工序（美工、大機輸出、小機輸出、UV輸出、後製）；後製採原始 Excel 獨立對帳去重數據（原生外勞總計列已含劉桂禎，嚴格杜絕重複累加）；平均才數分母嚴格依原始 Excel 數量欄（總才數 ÷ 加工數量）重新計算；王瑞昌生產紀錄已依正式核定規則全數歸入「後製」工序（1～8月有效納入，9～10月原始檔為 0 筆）。</div>`;
+  }
 
 
 
@@ -3740,19 +3808,24 @@ ${shipCalloutHtml}`;
 
 
 
+    const dongOrdLabel = (mode === 'day') ? '當日訂購需求（下單日統計）' : ((mode === 'week') ? '當週訂購需求（下單日統計）' : '訂購需求數量（下單日統計）');
+    const dongShipLabel = (mode === 'day') ? '當日實際出貨（出貨日統計）' : ((mode === 'week') ? '當週實際出貨（出貨日統計）' : '出貨總營收（出貨日統計）');
+    const dongMarginLabel = (mode === 'day') ? '當日出貨毛利' : ((mode === 'week') ? '當週出貨毛利' : '出貨毛利');
+    const dongGmLabel = (mode === 'day') ? '當日出貨毛利率' : ((mode === 'week') ? '當週出貨毛利率' : '出貨毛利率');
+
     $('dongContent').innerHTML=`
 
       ${dongBranchBtnHtml}
 
       <div class="kpis">
 
-        <div class="kpi"><small>訂購需求數量（片）</small><b class="purple">${dzOrdUnits}</b><div class="note">已出貨履約：${dzShpUnits}（${wan(activeShippedNet)}）</div></div>
+        <div class="kpi"><small>${dongOrdLabel}</small><b class="purple">${dzOrdUnits}</b><div class="note">已出貨履約：${dzShpUnits}（${wan(activeShippedNet)}）</div></div>
 
-        <div class="kpi"><small>出貨總營收</small><b class="blue">${wan(activeNet)}</b><div class="note">出貨客戶 ${activeShippedCustCount} 戶、出貨訂單 ${activeShippedOrderCount} 單</div></div>
+        <div class="kpi"><small>${dongShipLabel}</small><b class="blue">${wan(activeNet)}</b><div class="note">出貨客戶 ${activeShippedCustCount} 戶、出貨訂單 ${activeShippedOrderCount} 單</div></div>
 
-        <div class="kpi"><small>出貨毛利</small><b class="green">${wan(activeMargin)}</b></div>
+        <div class="kpi"><small>${dongMarginLabel}</small><b class="green">${wan(activeMargin)}</b></div>
 
-        <div class="kpi"><small>出貨毛利率</small><b class="${activeGm!=null&&activeGm<15?'orange':'green'}">${activeGm!=null?activeGm.toFixed(2)+'%':'-'}</b></div>
+        <div class="kpi"><small>${dongGmLabel}</small><b class="${activeGm!=null&&activeGm<15?'orange':'green'}">${activeGm!=null?activeGm.toFixed(2)+'%':'-'}</b></div>
 
       </div>
 
@@ -3877,7 +3950,7 @@ async function switchModeSafely(targetMode) {
   mode = targetMode; window.mode = targetMode;
   render();
 }
-window.switchModeSafely = switchModeSafely;
+window.switchModeSafely = switchModeSafely; function setMode(m){ switchModeSafely(m); } window.setMode = setMode;
 
 document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{
   switchModeSafely(b.dataset.mode);
@@ -4368,7 +4441,7 @@ let targetMonth = isTargetMissing ? latestOfficialMonth : mk;
 let t = TARGET[targetMonth]?.['調整後目標'];
 let targetNote = (isTargetMissing && !annual) ? `（${Number(mk.slice(5))}月官方月報尚未公告，暫以最近一期（${Number(targetMonth.slice(5))}月）已公告月報基準呈現）` : '';
 
-if(t){
+if((mode === 'month' || mode === 'ytd') && t){
 const a=annual?t.ytd_actual:t.actual,b=annual?t.ytd_target:t.target;
 const rate=(b&&b>0)?(a/b*100):0;
 const rs=(REGIONS[targetMonth]||[]).map(r=>({name:r.region,a:annual?r.ytd_actual:r.actual,b:annual?r.ytd_target:r.target,rate:annual?r.ytd_rate:r.monthly_rate})).filter(r=>r.rate!=null).sort((x,y)=>x.rate-y.rate);
@@ -4417,18 +4490,22 @@ add('target','營業目標｜優先追蹤達成率較低的區域',`${cardPeriod
 
 
 
-  const hasDayShipSnap = (mode === 'day' && typeof window !== 'undefined' && Boolean(window.UNSHIPPED_DRILLDOWN?.day?.[key]));
-  const shipSrc = (typeof window !== 'undefined' && (window.UNSHIPPED_DRILLDOWN?.[mode]?.[key] || window.UNSHIPPED_DRILLDOWN?.month?.[mk])) || null;
-  const shipSnapLabel = hasDayShipSnap ? `${key} 當日即時快照` : '期末快照';
-  const u = shipSrc ? {
-    order_count: shipSrc.summary.orders,
-    line_count: shipSrc.summary.completedUnshippedWorkOrders,
-    completedUnshippedAmt: shipSrc.summary.completedUnshippedAmt,
-    zero_order_count: shipSrc.summary.zeroWorkOrders,
-    max_days: shipSrc.summary.maxWaitDays
-  } : (s?.unshipped || { order_count: 0, line_count: 0, zero_order_count: 0, completedUnshippedAmt: 0, max_days: 0 });
+  const hasDayShipSnap = (mode === 'day' && typeof window !== 'undefined' && isVerifiedDaySnapshot(key));
+  const hasWeekShipSnap = (mode === 'week' && typeof window !== 'undefined' && Boolean(window.UNSHIPPED_DRILLDOWN?.week?.[key]));
+  const hasValidShipSnap = (mode === 'month' || mode === 'ytd' || hasDayShipSnap || hasWeekShipSnap);
+  if (hasValidShipSnap) {
+    const shipSrc = (typeof window !== 'undefined' && (window.UNSHIPPED_DRILLDOWN?.[mode]?.[key] || window.UNSHIPPED_DRILLDOWN?.month?.[mk])) || null;
+    const shipSnapLabel = hasDayShipSnap ? `${key} 當日即時快照` : '期末快照';
+    const u = shipSrc ? {
+      order_count: shipSrc.summary.orders,
+      line_count: shipSrc.summary.completedUnshippedWorkOrders,
+      completedUnshippedAmt: shipSrc.summary.completedUnshippedAmt,
+      zero_order_count: shipSrc.summary.zeroWorkOrders,
+      max_days: shipSrc.summary.maxWaitDays
+    } : (s?.unshipped || { order_count: 0, line_count: 0, zero_order_count: 0, completedUnshippedAmt: 0, max_days: 0 });
 
-  add('shipment','完工未出貨｜補齊零金額與長等待案件',`${shipSnapLabel} ${u.order_count} 單／${u.line_count} 工單；完工未出金額 ${money(u.completedUnshippedAmt || 0)}；最長等待 ${u.max_days} 天。`,'請出貨窗口匯出訂單編號、工單單號、完工日、金額與卡點。零淨額工單先核對計價方式，再逐單確認可出貨日。','出貨窗口＋業務＋財務','建議 3 日內完成零金額原因核對；每週對同一批案件核對已出貨、取消及剩餘數。','依完工未出貨定案口徑（選項 A）判定；納入完工日 <= 基準日未出貨之全部工單；管理區分已到期與提前完工；保留零淨額工單。',null,null,null,{drillMonth:((mode==='week'||mode==='day')?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
+    add('shipment','完工未出貨｜補齊零金額與長等待案件',`${shipSnapLabel} ${u.order_count} 單／${u.line_count} 工單；完工未出金額 ${money(u.completedUnshippedAmt || 0)}；最長等待 ${u.max_days} 天。`,'請出貨窗口匯出訂單編號、工單單號、完工日、金額與卡點。零淨額工單先核對計價方式，再逐單確認可出貨日。','出貨窗口＋業務＋財務','建議 3 日內完成零金額原因核對；每週對同一批案件核對已出貨、取消及剩餘數。','依完工未出貨定案口徑（選項 A）判定；納入完工日 <= 基準日未出貨之全部工單；管理區分已到期與提前完工；保留零淨額工單。',null,null,null,{drillMonth:((mode==='week'||mode==='day')?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
+  }
 
 
 
@@ -4452,9 +4529,11 @@ add('target','營業目標｜優先追蹤達成率較低的區域',`${cardPeriod
 
  let equipList=rawEquipList.filter(e=>!EXCLUDED_EQUIP.has(e.code));
 
+ if(mode === 'month' || mode === 'ytd'){
  const eq=[...equipList].sort((a,b)=>a.rate-b.rate);
 
  add('equipment','設備產能｜最低達成設備列查核候選',`${equipMonth} 月度設備彙總${equipNote}；以下依實際產量 ÷ 設定月產能排序（固定月產能達成率，已排除輔助設備）。`,'先確認設備是否在役、專用或備援，再核對派工與停機時數；相容工序確認後才試行移轉排程。','生產主管','完成設備用途、派工與停機狀況確認後，於後續管理週期追蹤同設備產能達成率；交期與品質若有對應資料，再搭配檢視。','這是固定月產能達成率（以總表固定月產能 1,165,340 才為基準），非稼動率，亦不同於依工作天數計算之理想產能（9月理想產能達成率為 86.11%）；已排除 6 台非主要／輔助設備；缺工時與停機資料，不能直接認定閒置。',eq.slice(0,5).map(e=>[e.code+' '+e.name,fmt(e.actual)+' 才',fmt(e.capacity)+' 才',e.rate!=null?e.rate.toFixed(2)+'%':'-']),['設備','實際產量','設定月產能','固定月產能達成率'],'先確認設備在役狀態、專用或備援性質；進一步核對排程派工與停機時數，評估相容工序替代性與產能基準合理性。');
+ }
 
 
 
@@ -4487,7 +4566,16 @@ add('target','營業目標｜優先追蹤達成率較低的區域',`${cardPeriod
  const ncNet = ncObj ? (ncObj.totalNet || 0) : (s?.new_net || 0);
  const ncRows = ncObj ? (ncObj.customers || []) : (s?.new_customers || []);
 
- add('customer-life','新舊客｜先把成交名單變成回訪清單',`本期新客 ${ncCnt} 戶，訂單淨額 ${money(ncNet)}；舊客追蹤含 8/19 會議人工盤點 242 戶與 8/25 CSV 正式條件篩選 ${dormCount} 戶（另有 2 筆客戶名稱／代碼匹配待確認，非兩者差額原因）${dormObserved>0?`（截至所選基準日共 ${dormObserved} 戶已實際出貨回流）`:''}。`,'新客逐戶確認第二次採購需求與預計日期；舊客先以完整交易紀錄重建名單，再排回訪優先序。','業務主管','建議 7 日內完成所列新客回訪安排；取得逐筆交易後才計算 30／60／90 日續購。','新客名單可能是截選；缺完整歷史交易、客戶建立日與回訪紀錄，不能將舊客清單當動態流失數。',ncRows.slice(0,5).map(c=>[c.name,money(c.net),'續購／負責人待確認']),['新客名稱','訂單淨額','追蹤狀態'],null,{newCustMonth:((mode==='week'||mode==='day')?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
+ const cutoffLabel = (mode === 'day') ? `截至 ${fmtDate(curDayStr)} 累計` : ((mode === 'week') ? `截至該週（${fmtDate(s?.end || curDayStr)}）累計` : '截至所選基準日');
+ const isPreBaseline = ((mode === 'day' && curDayStr < '2026-08-25') || (mode === 'week' && (s?.end || curDayStr) < '2026-08-25'));
+ let dormNote = '';
+ if (isPreBaseline) {
+   dormNote = '；舊客基準清單於 8/25 正式核定，所選期間早於基準日不溯及追蹤';
+ } else {
+   dormNote = `；舊客追蹤含 8/19 會議人工盤點 242 戶與 8/25 CSV 正式條件篩選 ${dormCount} 戶${dormObserved>0?`（${cutoffLabel}共 ${dormObserved} 戶已實際出貨回流）`:''}`;
+ }
+
+ add('customer-life','新舊客｜先把成交名單變成回訪清單',`本期新客 ${ncCnt} 戶，訂單淨額 ${money(ncNet)}${dormNote}。`,'新客逐戶確認第二次採購需求與預計日期；舊客先以完整交易紀錄重建名單，再排回訪優先序。','業務主管','建議 7 日內完成所列新客回訪安排；取得逐筆交易後才計算 30／60／90 日續購。','新客名單可能是截選；缺完整歷史交易、客戶建立日與回訪紀錄，不能將舊客清單當動態流失數。',ncRows.slice(0,5).map(c=>[c.name,money(c.net),'續購／負責人待確認']),['新客名稱','訂單淨額','追蹤狀態'],null,{newCustMonth:((mode==='week'||mode==='day')?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
 
  return out;
 
@@ -5380,6 +5468,12 @@ function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterSta
 }
 
 function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilter, currentSort, expandedOrder, selectedBranch){
+  if (mode === 'day' && !isVerifiedDaySnapshot(drillMonth)) {
+    return `<div class="warn" style="margin-top:14px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;padding:16px;border-radius:6px;line-height:1.7;">
+      <b>📌 完工未出貨時點快照說明：</b>所選日期（<b>${esc(drillMonth)}</b>）尚無獨立驗證之歷史快照點。<br>
+      系統不以假 0 或跨期推定呈現單日工單清單。如需查閱完整工單明細與等待天數，請切換至<b>「月模式」</b>檢視月末歷史存量。
+    </div>`;
+  }
   const shipSource = (typeof window !== 'undefined' && window.UNSHIPPED_DRILLDOWN) ? (window.UNSHIPPED_DRILLDOWN[mode]?.[drillMonth] || window.UNSHIPPED_DRILLDOWN['month']?.[drillMonth] || window.UNSHIPPED_DRILLDOWN['month']?.['2026-11'] || window.UNSHIPPED_DRILLDOWN['month']?.['2026-10']) : null;
   if (!shipSource || (!shipSource.summary && !shipSource.orders && !shipSource.ordersList)) {
     return `<div class="warn" style="margin-top:14px">目前所選期間（${esc(drillMonth)}）尚無完工未出貨訂單明細資料。</div>`;
@@ -7215,7 +7309,47 @@ const priorOpen=openImprove;openImprove=function(id){
 
  }
 
- if(!d)return;
+  if(!d){
+    if(id==='target'){
+      d = {
+        id: 'target',
+        title: '營業與目標達成｜管理月度與 YTD 評估',
+        evidence: `所選模式（${mode==='day'?'日模式':'週模式'}）不適用營業目標達成率判讀。巧展官方目標以完整管理月度與 YTD 為主。`,
+        action: '請切換至「月模式」或「YTD」查看正式目標達成進度。',
+        owner: '業務主管',
+        check: '切換至月模式查閱各區月目標達成狀況。',
+        missing: '單日與單週無官方核定之營業目標基準。',
+        rows: [],
+        headers: ['業務區域','正式實績','調整後目標','目標差額','達成率']
+      };
+    } else if(id==='equipment'){
+      d = {
+        id: 'equipment',
+        title: '生產與設備｜管理月度結算數據',
+        evidence: `設備實際產量與稼動率統計源自月度設備使用分析表（自然月結算），${mode==='day'?'單日':'單週'}無原始紀錄。`,
+        action: '請切換至「月模式」查看各設備月產能達成率與製品工序明細。',
+        owner: '生產主管',
+        check: '切換至月模式查閱各機台固定月產能達成率。',
+        missing: '無單日或單週設備開機與產量紀錄。',
+        rows: [],
+        headers: ['設備','實際產量','設定月產能','固定月產能達成率']
+      };
+    } else if(id==='shipment'){
+      d = {
+        id: 'shipment',
+        title: '完工未出貨｜時點快照限制',
+        evidence: `所選期間（${summaryObj.key || selected}）尚無經驗證之完工未出貨時點快照。系統不以假 0 或期末存量冒充。`,
+        action: '請切換至「月模式」檢視月末正式期末快照。',
+        owner: '出貨窗口＋業務＋財務',
+        check: '切換至月模式檢視管理月期末（25日）結算存量。',
+        missing: '所選日期非 ERP 保存之歷史快照日。',
+        rows: [],
+        headers: ['處理對象','數據依據','差距／查核資訊']
+      };
+    } else {
+      return;
+    }
+  }
 
 
 

@@ -4,7 +4,11 @@
 
 <title>巧展｜董事長營運洞察（11/10 出退整合試算版）</title>
 
-<script src="./dashboard_data_core.js?v=20261110-opt2"></script>
+<script src="./dashboard_data_core.js?v=20261120"></script>
+<script>
+  // 統一由 index.html 管理本次正式部署版本，全域資料檔與分檔自動連動
+  window.BUNDLE_VERSION = '20261120';
+</script>
 
 <style>
 
@@ -1003,8 +1007,6 @@ function rateClass(r){return r>=100?'green':r<80?'red':'orange'}
 function signMonthKeyFromSummary(s){return mgmtKey(s?.end || s?.start || (typeof selected !== 'undefined' ? selected : (document.getElementById('datePicker')?.value || '2026-10-25')))}
 
 function isVerifiedDaySnapshot(dKey){
-  // 10/26 為 10/25 期末存量延續推定，無獨立訂單與出貨變動，排除作為獨立日快照呈現具體 KPI
-  if(dKey === '2026-10-26') return false;
   return Boolean(typeof window !== 'undefined' && window.UNSHIPPED_DRILLDOWN?.day?.[dKey]);
 }
 
@@ -2224,6 +2226,58 @@ function getMergedUnshippedData(shipSource, selectedBranches) {
   const allOrders = shipSource.ordersList || shipSource.orders || [];
   const allAnomalies = shipSource.deliveryAnomalies || [];
 
+  // 若為輕量每日 KPI 索引（無全量 ordersList），直接依 summary 或 byRegion 聚合
+  if (allOrders.length === 0 && shipSource.summary) {
+    if (branches.length === 5 || !shipSource.byRegion) {
+      return {
+        summary: { ...shipSource.summary, scopeNote: '五大區合計' },
+        ordersList: [],
+        deliveryAnomalies: []
+      };
+    }
+    let ordCount = 0, lines = 0, compWos = 0, compAmt = 0, dueWos = 0, dueAmt = 0, earlyWos = 0, earlyAmt = 0;
+    let maxW = 0, totalW = 0, wCount = 0;
+    for (const b of branches) {
+      const reg = shipSource.byRegion[b]?.summary;
+      if (reg) {
+        ordCount += (reg.orders || 0);
+        lines += (reg.lines || 0);
+        compWos += (reg.completedUnshippedWorkOrders || 0);
+        compAmt += (reg.completedUnshippedAmt || 0);
+        dueWos += (reg.dueWorkOrders || 0);
+        dueAmt += (reg.dueAmt || 0);
+        earlyWos += (reg.earlyWorkOrders || 0);
+        earlyAmt += (reg.earlyAmt || 0);
+        if ((reg.maxWaitDays || 0) > maxW) maxW = reg.maxWaitDays;
+        totalW += (reg.avgWaitDays || 0) * (reg.completedUnshippedWorkOrders || 0);
+        wCount += (reg.completedUnshippedWorkOrders || 0);
+      }
+    }
+    return {
+      summary: {
+        orders: ordCount,
+        lines: lines,
+        completedUnshippedWorkOrders: compWos,
+        completedUnshippedAmt: compAmt,
+        totalOrderPendingAmt: compAmt,
+        pendingUnshippedAmt: compAmt,
+        dueWorkOrders: dueWos,
+        dueAmt: dueAmt,
+        earlyWorkOrders: earlyWos,
+        earlyAmt: earlyAmt,
+        zeroWorkOrders: 0,
+        maxWaitDays: maxW,
+        avgWaitDays: wCount > 0 ? Math.round(totalW / wCount * 10) / 10 : 0,
+        isOfficialSnapshot: shipSource.isOfficialSnapshot,
+        snapshotSource: shipSource.snapshotSource,
+        snapshotDate: shipSource.snapshotDate,
+        scopeNote: branches.join('、')
+      },
+      ordersList: [],
+      deliveryAnomalies: []
+    };
+  }
+
   const filtered = (branches.length === 5)
     ? allOrders
     : allOrders.filter(o => branches.includes(REGION_TO_BRANCH[o.region] || o.region));
@@ -2619,16 +2673,14 @@ function render(){
     $('dataNote').textContent=`你選擇 ${fmtDateW(selected)}；目前營運資料最新至 ${fmtDateW(LATEST)}，因此先顯示最新可用期間。官方月度資料已更新至 ${actM} 月。`;
   }
 
-  else if(selected==='2026-10-10'||selected==='2026-10-11')$('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；適逢國慶連假休假日（非營業日），當日無訂單交易，簽核紀錄如實呈現。月模式依 26–25 管理月切割。`;
-
-  else if(selected==='2026-10-18')$('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；週日休假日（非營業日），當日無訂單交易，簽核紀錄如實呈現。月模式依 26–25 管理月切割。`;
-
-  else if(selected==='2026-10-23')$('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；適逢颱風停班日，當日訂單量較少（22 筆明細，涵蓋北A與北C，淨額 15,200 元）；簽核紀錄如實呈現。月模式依 26–25 管理月切割。`;
-
-  else if(selected==='2026-10-24')$('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；週六非營業日（適逢颱風停班日），當日無訂單交易，簽核紀錄共 14 筆（郝家偉現場簽核）。月模式依 26–25 管理月切割。`;
-
-  else if(selected==='2026-10-25')$('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；週日非營業日（10 月管理月截止日），當日無訂單交易與簽核紀錄。月模式依 26–25 管理月切割。`;
-
+  else if(mode==='day'&& (selected==='2026-10-10'||selected==='2026-10-11')) $('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；適逢國慶連假休假日（非營業日），當日無訂單交易，簽核紀錄如實呈現。`;
+  else if(mode==='day'&& selected==='2026-10-18') $('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；週日休假日（非營業日），當日無訂單交易，簽核紀錄如實呈現。`;
+  else if(mode==='day'&& selected==='2026-10-23') $('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；適逢颱風停班日，當日訂單量較少（22 筆明細，涵蓋北A與北C，淨額 15,200 元）；簽核紀錄如實呈現。`;
+  else if(mode==='day'&& selected==='2026-10-24') $('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；週六非營業日（適逢颱風停班日），當日無訂單交易，簽核紀錄共 14 筆（郝家偉現場簽核）。`;
+  else if(mode==='day'&& selected==='2026-10-25') $('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；週日非營業日（10 月管理月截止日），當日無訂單交易與簽核紀錄。`;
+  else if(mode==='week') $('dataNote').textContent=`所選週別 ${s?.label || key}（週一至週日區間統計）。`;
+  else if(mode==='month') $('dataNote').textContent=`所選月份 ${key} 管理月（依巧展 26–25 管理月口徑結算）。`;
+  else if(mode==='ytd') $('dataNote').textContent=`2026 YTD 年度累計（依巧展管理月口徑，截至資料最新日）。`;
   else $('dataNote').textContent=`所選日期 ${fmtDateW(selected)}；月模式依巧展 26–25 管理月切割。`;
 
 
@@ -2683,47 +2735,29 @@ function render(){
 
     ];
 
-  } else if(noOrders){
+  } else if(mode==='day'&& noOrders){
 
     if(selected==='2026-10-10'||selected==='2026-10-11'){
-
       items.push(`${tag('狀態','orange')}<strong>當日無訂單（國慶連假休假日）</strong>`);
-
       items.push(`${tag('營收','blue')}<strong>出貨單淨額 0 元（休假日無交易）</strong>`);
-
     } else if(selected==='2026-10-18'){
-
       items.push(`${tag('狀態','orange')}<strong>當日無訂單（週日休假日）</strong>`);
-
       items.push(`${tag('營收','blue')}<strong>出貨單淨額 0 元（休假日無交易）</strong>`);
-
     } else if(selected==='2026-10-24'){
-
       items.push(`${tag('狀態','orange')}<strong>當日無訂單（週六非營業日／逢颱風停班）</strong>`);
-
       items.push(`${tag('營收','blue')}<strong>出貨單淨額 0 元（簽核紀錄 14 筆如實呈現）</strong>`);
-
     } else if(selected==='2026-10-25'){
-
       items.push(`${tag('狀態','orange')}<strong>當日無訂單（週日非營業日／管理月截止日）</strong>`);
-
       items.push(`${tag('營收','blue')}<strong>出貨單淨額 0 元</strong>`);
-
     } else if(s?.orders?.isNotCovered){
-
       items.push(`${tag('狀態','orange')}<strong>訂單來源未涵蓋此日</strong>`);
-
       items.push(`${tag('備註','blue')}<strong>未涵蓋日期保留狀態，不視為已確認之 0 元營收</strong>`);
-
     } else {
-
       items.push(`${tag('狀態','orange')}<strong>當日無訂單交易</strong>`);
-
       items.push(`${tag('營收','blue')}<strong>出貨單淨額 0 元</strong>`);
-
     }
 
-  } else if(selected==='2026-10-23'){
+  } else if(mode==='day'&& selected==='2026-10-23'){
 
     items.push(`${tag('營收','blue')}<strong>出貨單淨額 ${wan(s.net)}</strong>（颱風停班日，當日訂單量較少：22 筆明細）`);
 
@@ -2866,31 +2900,21 @@ function render(){
 
     return;
 
-  } else if(noOrders){
+  } else if(mode==='day'&& noOrders){
 
     if(selected==='2026-10-24'){
-
       $('overviewContent').innerHTML=`<div class="kpis"><div class="kpi"><small>出貨單淨額</small><b class="blue">0 元</b><div class="change flat">週六非營業日（逢颱風停班）</div></div><div class="kpi"><small>出貨毛利率</small><b>-</b><div class="change flat">無訂單交易</div></div><div class="kpi"><small>出貨客戶數</small><b>0 戶</b><div class="change flat">-</div></div><div class="kpi"><small>已出貨訂單數</small><b>0 單</b><div class="change flat">-</div></div></div><div class="callout"><b>期間口徑：</b>${viewLabel(s,key)}。週六非營業日（逢颱風停班日），當日無訂單交易。簽核紀錄共 14 筆（郝家偉現場簽核）如實呈現。</div>`;
-
     } else if(selected==='2026-10-25'){
-
       $('overviewContent').innerHTML=`<div class="kpis"><div class="kpi"><small>出貨單淨額</small><b class="blue">0 元</b><div class="change flat">週日非營業日（管理月截止日）</div></div><div class="kpi"><small>出貨毛利率</small><b>-</b><div class="change flat">無訂單交易</div></div><div class="kpi"><small>出貨客戶數</small><b>0 戶</b><div class="change flat">-</div></div><div class="kpi"><small>已出貨訂單數</small><b>0 單</b><div class="change flat">-</div></div></div><div class="callout"><b>期間口徑：</b>${viewLabel(s,key)}。週日非營業日（10 月管理月截止日），當日無訂單交易。</div>`;
-
     } else if(s?.orders?.isNotCovered){
-
       $('overviewContent').innerHTML=`<div class="kpis"><div class="kpi"><small>出貨單淨額</small><b class="blue">-</b><div class="change flat">訂單來源未涵蓋此日</div></div><div class="kpi"><small>出貨毛利率</small><b>-</b><div class="change flat">最新訂單至 10/23</div></div><div class="kpi"><small>出貨客戶數</small><b>-</b><div class="change flat">待補齊訂單資料</div></div><div class="kpi"><small>已出貨訂單數</small><b>-</b><div class="change flat">待補齊訂單資料</div></div></div><div class="callout"><b>期間口徑：</b>${viewLabel(s,key)}。訂單資料來源最新至 2026/10/25（最後訂單 2026/10/23），本系統保留未涵蓋狀態，不直接視為已確認之零營收。簽核數據如實呈現。</div>`;
-
     } else if(selected==='2026-10-10'||selected==='2026-10-11'||selected==='2026-10-18'){
-
       $('overviewContent').innerHTML=`<div class="kpis"><div class="kpi"><small>出貨單淨額</small><b class="blue">0 元</b><div class="change flat">當日無訂單（休假日）</div></div><div class="kpi"><small>出貨毛利率</small><b>-</b><div class="change flat">休假日無訂單</div></div><div class="kpi"><small>出貨客戶數</small><b>0 戶</b><div class="change flat">-</div></div><div class="kpi"><small>已出貨訂單數</small><b>0 單</b><div class="change flat">-</div></div></div><div class="callout"><b>期間口徑：</b>${viewLabel(s,key)}。已確認為休假日／非營業日，當日無訂單交易。簽核數據如實獨立呈現。</div>`;
-
     } else {
-
       $('overviewContent').innerHTML=`<div class="kpis"><div class="kpi"><small>出貨單淨額</small><b class="blue">0 元</b><div class="change flat">當日無訂單交易</div></div><div class="kpi"><small>出貨毛利率</small><b>-</b><div class="change flat">無訂單交易</div></div><div class="kpi"><small>出貨客戶數</small><b>0 戶</b><div class="change flat">-</div></div><div class="kpi"><small>已出貨訂單數</small><b>0 單</b><div class="change flat">-</div></div></div><div class="callout"><b>期間口徑：</b>${viewLabel(s,key)}。當日無訂單交易。簽核維持當日實際快照。</div>`;
-
     }
 
-  } else if(selected==='2026-10-23'){
+  } else if(mode==='day'&& selected==='2026-10-23'){
 
     $('overviewContent').innerHTML=`<div class="kpis"><div class="kpi"><small>出貨單淨額</small><b class="blue">${wan(s.net)}</b><div class="change flat">颱風停班日（當日訂單量較少）</div></div><div class="kpi"><small>出貨毛利率</small><b>${s.gm!=null?s.gm.toFixed(2)+'%':'-'}</b><div class="change flat">涵蓋北A與北C</div></div><div class="kpi"><small>出貨客戶數</small><b>${fmt(s.customers)} 戶</b><div class="change flat">-</div></div><div class="kpi"><small>已出貨訂單數</small><b>${fmt(s.orders)} 單</b><div class="change flat">-</div></div></div><div class="callout"><b>期間口徑：</b>${viewLabel(s,key)}。颱風停班日，當日訂單量較少（共 22 筆明細，涵蓋北A與北C，淨額 15,200 元）；簽核數據如實呈現。</div>`;
 
@@ -3480,16 +3504,41 @@ function render(){
 
     const snapDateStr = snapshotDate ? fmtDate(snapshotDate).slice(5) : '-';
     const hasActualDaySnapshot = (mode === 'day' && isVerifiedDaySnapshot(key));
+    const isOfficial = Boolean(shipSource?.isOfficialSnapshot || shipSource?.summary?.isOfficialSnapshot || (snapshotDate && snapshotDate.endsWith('-25')));
+    const badgeHtml = isOfficial
+      ? `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:bold;border-radius:4px;background:#15803d;color:#fff;margin-right:6px;">【管理月期末重建快照】</span>`
+      : `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:bold;border-radius:4px;background:#0369a1;color:#fff;margin-right:6px;">【依現存 ERP 明細歷史重建】</span>`;
 
     if (hasActualDaySnapshot) {
-      shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;font-size:12px;"><b>ℹ️ 當日即時存量快照：</b>完工未出貨為選定當日（快照基準日 ${snapDateStr}）之即時完工未出貨存量快照（排除庫存生產單），非月末彙總推估。</div>`;
+      shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;font-size:12px;line-height:1.7;">
+        ${badgeHtml}<b>當日即時存量快照：</b>完工未出貨為截至選定當日（快照基準日 <b>${snapDateStr}</b>）之實際完工未出貨存量（排除庫存生產單），非月末推估。
+        ${!isOfficial ? '<br><span style="font-size:11px;color:#0284c7;">※ 註：此為依現存 ERP 明細歷史回推重建，非當日官方快照存檔；可能受事後改單或跨日過帳影響。</span>' : ''}
+      </div>`;
     } else if (mode === 'day') {
       // 嚴格遵守：非快照日絕不把期末存量混充為當日 KPI，亦不顯示假 0
       shipCalloutHtml = `<div class="callout" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;font-size:12px;line-height:1.7;">
-        <b>📌 完工未出貨歷史快照說明：</b>所選日期（<b>${fmtDate(selected)}</b>）未建立單日即時未出貨存量快照。為恪遵資料真實性，系統<b>不以 0 工單（假性無存量）呈現</b>，亦<b>不直接將月末期末存量混充為當日 KPI</b>。右側提供所屬 <b>${esc(shipMonthKey)} 管理月結算日（${snapDateStr}）</b>之期末結算存量作為規模參考。
+        <b>📌 完工未出貨歷史快照說明：</b>所選日期（<b>${fmtDate(selected)}</b>）<b>該日歷史快照尚未建立</b>。為恪遵資料真實性，系統<b>不以 0 工單（假性無存量）呈現</b>，亦<b>不直接將月末期末存量混充為當日 KPI</b>。右側提供所屬 <b>${esc(shipMonthKey)} 管理月結算日（${snapDateStr}）</b>之期末結算存量作為規模參考。
       </div>`;
     } else if (mode === 'week') {
-      shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:12px;"><b>ℹ️ 時點存量說明：</b>週模式完工未出貨為所屬管理月期末結算快照（快照基準日 ${snapDateStr}），時點存量不跨日加總累計。</div>`;
+      const pComp = shipSource?.priorComparison;
+      if (pComp) {
+        const diffWo = pComp.diffWorkOrders;
+        const diffOrd = pComp.diffOrders;
+        const diffAmt = pComp.diffAmt;
+        const diffWoTxt = diffWo >= 0 ? `較上週末存量淨增 ${diffWo} 工單` : `較上週末存量淨減 ${Math.abs(diffWo)} 工單`;
+        const diffOrdTxt = diffOrd >= 0 ? `淨增 ${diffOrd} 單` : `淨減 ${Math.abs(diffOrd)} 單`;
+        const diffAmtTxt = diffAmt >= 0 ? `金額增加 ${money(diffAmt)}` : `金額減少 ${money(Math.abs(diffAmt))}`;
+        trendHtml = `<span style="font-size:11px;color:${diffWo > 0 ? '#b91c1c' : '#15803d'};font-weight:bold;margin-left:4px;">（${diffWoTxt}、${diffAmtTxt}）</span>`;
+        
+        shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:12px;line-height:1.7;">
+          ${badgeHtml}<b>週末時點存量與比較：</b>完工未出貨為截至該週週末（<b>${esc(snapshotDate)}</b>）之時點存量（<b>嚴格禁止將一週 7 天存量加總</b>）。較上週末（${esc(pComp.priorDate)} 存量），本週存量<b>${diffWoTxt}</b>、<b>${diffOrdTxt}</b>、<b>${diffAmtTxt}</b>。
+          ${!isOfficial ? '<br><span style="font-size:11px;color:#0369a1;">※ 註：此為依現存 ERP 明細歷史回推重建，非當日官方快照存檔；可能受事後改單、跨日過帳影響。</span>' : ''}
+        </div>`;
+      } else {
+        shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:12px;line-height:1.7;">
+          ${badgeHtml}<b>週末時點存量：</b>完工未出貨為截至該週週末（<b>${esc(snapshotDate)}</b>）之時點存量（<b>嚴格禁止將一週 7 天存量加總</b>）。首期基準無前期週末可供比較。
+        </div>`;
+      }
     } else if (mode === 'ytd') {
       shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#475569;font-size:12px;"><b>ℹ️ 時點存量說明：</b>YTD 完工未出貨顯示最新期末結算快照（快照基準日 ${snapDateStr}），時點存量不跨月加總累計。</div>`;
     } else if (mode === 'month') {
@@ -3508,6 +3557,9 @@ function render(){
         } else {
           trendHtml = `<span style="font-size:11px;color:#94a3b8;margin-left:4px;">（首期基準無前期比較）</span>`;
         }
+        shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:12px;line-height:1.7;">
+          ${badgeHtml}<b>管理月期末結算快照：</b>完工未出貨為截至該管理月期末（<b>${esc(snapshotDate)} 結算日</b>）之正式期末存量快照（排除庫存生產單）。
+        </div>`;
       } else {
         // 未完整管理月（例如 2026-11 快照至 11-10）：不得顯示 MoM %，呈現存量淨增減數值，亦不描述為已出貨消化
         if (mergedPrior && mergedPrior.summary) {
@@ -3540,7 +3592,7 @@ function render(){
   </div>
   <div style="font-size:13px;color:#64748b;">
     完工未出貨庫存依 ERP 規範僅於<b>管理月期末結算日（每月 25 日）</b>或特定驗證日建立深度保存快照。<br>
-    所選期間（<b>${viewLabelStr}</b>）尚無經驗證的完工未出貨時點快照。<br>
+    所選期間（<b>${viewLabelStr}</b>）該日歷史快照尚未建立（尚無經驗證的完工未出貨時點快照）。<br>
     依誠實揭露原則<b>不提供單日／單週庫存統計，亦不以假 0 或跨期存量冒充當期 KPI</b>。<br>
     如需查閱完整工單清單與等待天數，請切換至<b>「月模式」</b>檢視月末歷史存量。
   </div>
@@ -3876,7 +3928,7 @@ function ensureModeDataLoaded(targetMode) {
   if (targetMode !== 'day' && targetMode !== 'week') return Promise.resolve(true);
   if (window.__LOADED_DATA_BUNDLES && window.__LOADED_DATA_BUNDLES[targetMode]) return Promise.resolve(true);
   if (_modeBundlePromises[targetMode]) return _modeBundlePromises[targetMode];
-  const ver = encodeURIComponent(window.BUNDLE_VERSION || '20261110-opt2');
+  const ver = encodeURIComponent(window.BUNDLE_VERSION || '20261120');
   const src = `./dashboard_data_${targetMode}.js?v=${ver}`;
   _modeBundlePromises[targetMode] = new Promise((resolve, reject) => {
     const sc = document.createElement('script');
@@ -5467,6 +5519,38 @@ function renderDormantCustomerDrilldownHtml(mode,drillMonth,cutoffDate,filterSta
  </div>`;
 }
 
+function loadUnshippedShard(mKey, callback) {
+  if (typeof window === 'undefined') return;
+  window.__UNSHIPPED_SHARDS = window.__UNSHIPPED_SHARDS || {};
+  if (window.__UNSHIPPED_SHARDS[mKey]) {
+    if (callback) callback();
+    return;
+  }
+  window.__UNSHIPPED_SHARDS_LOADING = window.__UNSHIPPED_SHARDS_LOADING || {};
+  if (window.__UNSHIPPED_SHARDS_LOADING[mKey]) {
+    const timer = setInterval(() => {
+      if (window.__UNSHIPPED_SHARDS[mKey]) {
+        clearInterval(timer);
+        if (callback) callback();
+      }
+    }, 50);
+    return;
+  }
+  window.__UNSHIPPED_SHARDS_LOADING[mKey] = true;
+  const script = document.createElement('script');
+  script.src = 'shards/unshipped_shard_' + mKey.replace('-', '_') + '.js?v=' + encodeURIComponent(window.BUNDLE_VERSION || '20261120');
+  script.onload = () => {
+    window.__UNSHIPPED_SHARDS_LOADING[mKey] = false;
+    if (callback) callback();
+  };
+  script.onerror = () => {
+    window.__UNSHIPPED_SHARDS_LOADING[mKey] = false;
+    console.error('Failed to load shards/unshipped_shard_' + mKey.replace('-', '_') + '.js');
+    if (callback) callback();
+  };
+  document.head.appendChild(script);
+}
+
 function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilter, currentSort, expandedOrder, selectedBranch){
   if (mode === 'day' && !isVerifiedDaySnapshot(drillMonth)) {
     return `<div class="warn" style="margin-top:14px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;padding:16px;border-radius:6px;line-height:1.7;">
@@ -5477,6 +5561,33 @@ function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilte
   const shipSource = (typeof window !== 'undefined' && window.UNSHIPPED_DRILLDOWN) ? (window.UNSHIPPED_DRILLDOWN[mode]?.[drillMonth] || window.UNSHIPPED_DRILLDOWN['month']?.[drillMonth] || window.UNSHIPPED_DRILLDOWN['month']?.['2026-11'] || window.UNSHIPPED_DRILLDOWN['month']?.['2026-10']) : null;
   if (!shipSource || (!shipSource.summary && !shipSource.orders && !shipSource.ordersList)) {
     return `<div class="warn" style="margin-top:14px">目前所選期間（${esc(drillMonth)}）尚無完工未出貨訂單明細資料。</div>`;
+  }
+
+  // 自動動態分檔載入機制 (On-Demand Monthly Sharded Loader)
+  const targetDateKey = (mode === 'day') ? drillMonth : (shipSource.snapshotDate || drillMonth);
+  const mKey = (mode === 'month') ? drillMonth : mgmtKey(targetDateKey);
+  const curOrders = shipSource.ordersList || shipSource.orders || [];
+  if (curOrders.length === 0 && typeof window !== 'undefined') {
+    window.__UNSHIPPED_SHARDS = window.__UNSHIPPED_SHARDS || {};
+    const shardM = window.__UNSHIPPED_SHARDS[mKey];
+    if (shardM && shardM[targetDateKey]) {
+      shipSource.ordersList = shardM[targetDateKey].ordersList || [];
+      shipSource.deliveryAnomalies = shardM[targetDateKey].deliveryAnomalies || [];
+    } else {
+      loadUnshippedShard(mKey, () => {
+        const sBox = document.getElementById('shipmentDrilldownContainer');
+        if (sBox) {
+          sBox.innerHTML = renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilter, currentSort, expandedOrder, selectedBranch);
+        }
+      });
+      return `
+      <div class="modal-body-section" style="padding:12px 16px;">
+        <div style="padding:28px 16px;text-align:center;color:#0369a1;background:#f0f9ff;border-radius:6px;border:1px dashed #bae6fd;margin-top:14px;line-height:1.8;">
+          <div style="font-size:15px;font-weight:bold;margin-bottom:6px;">⏳ 正在動態載入歷史工單明細分檔（${esc(mKey)}）...</div>
+          <div style="font-size:12px;color:#0284c7;">為兼顧全系統載入效能，歷史管理月份之逐筆工單明細採按月封裝載入，載入後自動快取於本機記憶體。</div>
+        </div>
+      </div>`;
+    }
   }
 
   const activeBranches = normalizeBranchInput(selectedBranch || currentShipBranches);
@@ -5542,8 +5653,14 @@ function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilte
     </div>
   </div>`;
 
+  const isOfficial = Boolean(shipSource.isOfficialSnapshot || shipSource.summary?.isOfficialSnapshot);
+  const badgeHtml = isOfficial
+    ? `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:bold;border-radius:4px;background:#15803d;color:#fff;margin-right:6px;">【管理月期末重建快照】</span>`
+    : `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:bold;border-radius:4px;background:#0369a1;color:#fff;margin-right:6px;">【依現存 ERP 明細歷史重建】</span>`;
+
   const calloutHtml = `
   <div class="callout" style="margin-top:10px;margin-bottom:14px;font-size:12px;line-height:1.7;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;">
+    <div style="margin-bottom:6px;">${badgeHtml}<b>時點快照資料來源：</b>${isOfficial ? '依 ERP 現存明細核對之管理月期末結算重建快照。' : '依現存 ERP 訂單與工單明細歷史回推重建（非當日官方快照存檔；可能受事後改單、跨日過帳影響）。'}</div>
     • <b>完工未出貨定案原則（選項 A）：</b>納入標準為「工單完工日 ≤ 基準日」、「截至基準日尚未出貨」且排除庫存生產單之全部工單（<b>${fmt(s.completedUnshippedWorkOrders)} 工單</b>、待出金額 <b>${money(s.completedUnshippedAmt)}</b>、<b>${fmt(s.orders)} 單</b>、<b>${fmt(s.customers)} 戶</b>）。<br>
     • <b>管理分類分析（不影響總數）：</b><br>
       &nbsp;&nbsp;1. <b>已到期未出貨（已達或逾交件日）：</b>共 <b>${fmt(s.dueWorkOrders ?? 0)} 工單</b>（待出金額 <b>${money(s.dueAmt ?? 0)}</b>），屬需優先追蹤出貨之工單。<br>
@@ -5607,9 +5724,16 @@ function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilte
       `).join('');
     }
 
-    mainContentHtml = `
-    <div style="overflow-x:auto;border:1px solid #cbd5e1;border-radius:6px;">
-      <table style="width:100%;font-size:12px;border-collapse:collapse;background:#fff;">
+    if (filtered.length === 0 && rawList.length === 0 && s.completedUnshippedWorkOrders > 0) {
+      mainContentHtml = `
+      <div class="warn" style="margin-top:14px;background:#f8fafc;border:1px solid #cbd5e1;padding:16px;border-radius:6px;line-height:1.7;">
+        <b>ℹ️ 歷史工單明細分檔說明：</b>所選日期（<b>${esc(drillMonth)}</b>）之時點存量 KPI 已完成精確回推（共 <b>${fmt(s.completedUnshippedWorkOrders)} 工單</b>、待出金額 <b>${money(s.completedUnshippedAmt)}</b>）。<br>
+        為兼顧全系統載入效能，歷史管理月份之逐筆工單明細採<b>按管理月分檔（Monthly Sharded Bundle）</b>封裝；如需特定歷史工單逐張查核，可透過離線明細包載入檢視。
+      </div>`;
+    } else {
+      mainContentHtml = `
+      <div style="overflow-x:auto;border:1px solid #cbd5e1;border-radius:6px;">
+        <table style="width:100%;font-size:12px;border-collapse:collapse;background:#fff;">
         <thead>
           <tr style="background:#fee2e2;color:#991b1b;border-bottom:2px solid #fca5a5;">
             <th style="padding:6px 8px;white-space:nowrap;">訂單單號</th>
@@ -5627,6 +5751,7 @@ function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilte
         <tbody>${anomalyRowsHtml}</tbody>
       </table>
     </div>`;
+    }
   } else {
     // 訂單主表：嚴格 12 欄（第6欄為「完工工單數」）；工單子表：嚴格 16 欄 (colspan="12")
     const tableRowsHtml = filtered.map(o => {
@@ -5741,9 +5866,16 @@ function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilte
       ${subTableHtml}`;
     }).join('');
 
-    mainContentHtml = `
-    <div style="overflow-x:auto;border:1px solid #cbd5e1;border-radius:6px;">
-      <table style="width:100%;font-size:12px;border-collapse:collapse;background:#fff;">
+    if (filtered.length === 0 && rawList.length === 0 && s.completedUnshippedWorkOrders > 0) {
+      mainContentHtml = `
+      <div class="warn" style="margin-top:14px;background:#f8fafc;border:1px solid #cbd5e1;padding:16px;border-radius:6px;line-height:1.7;">
+        <b>ℹ️ 歷史工單明細分檔說明：</b>所選日期（<b>${esc(drillMonth)}</b>）之時點存量 KPI 已完成精確回推（共 <b>${fmt(s.completedUnshippedWorkOrders)} 工單</b>、待出金額 <b>${money(s.completedUnshippedAmt)}</b>）。<br>
+        為兼顧全系統載入效能，歷史管理月份之逐筆工單明細採<b>按管理月分檔（Monthly Sharded Bundle）</b>封裝；如需特定歷史工單逐張查核，可透過離線明細包載入檢視。
+      </div>`;
+    } else {
+      mainContentHtml = `
+      <div style="overflow-x:auto;border:1px solid #cbd5e1;border-radius:6px;">
+        <table style="width:100%;font-size:12px;border-collapse:collapse;background:#fff;">
         <thead>
           <tr style="background:#e2e8f0;color:#334155;border-bottom:2px solid #cbd5e1;">
             <th style="padding:6px 8px;white-space:nowrap;">訂單單號</th>
@@ -5763,6 +5895,7 @@ function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilte
         <tbody>${tableRowsHtml}</tbody>
       </table>
     </div>`;
+    }
   }
 
   return `

@@ -4,10 +4,10 @@
 
 <title>巧展｜董事長營運洞察（11/10 出退整合試算版）</title>
 
-<script src="./dashboard_data_core.js?v=20261120"></script>
+<script src="./dashboard_data_core.js?v=20261122"></script>
 <script>
   // 統一由 index.html 管理本次正式部署版本，全域資料檔與分檔自動連動
-  window.BUNDLE_VERSION = '20261120';
+  window.BUNDLE_VERSION = '20261122';
 </script>
 
 <style>
@@ -118,7 +118,7 @@ main{padding:14px 12px 40px}.block{background:#fff;border:1px solid var(--line);
 
 </style></head><body>
 
-<header><div class="wrap"><div class="brand-row"><div class="brand">巧展實業｜董事長營運洞察</div><div class="badge" id="sourceBadge">動態管線接入版｜最新 2026/10/25</div></div><h1 id="title"></h1><div class="period" id="period"></div><div class="controls"><div class="datebox"><button id="prevBtn">‹</button><input id="datePicker" type="date"><span id="weekdayBadge" class="weekday-badge weekday"></span><button id="nextBtn">›</button></div><div class="switch"><button class="mode" data-mode="day">日</button><button class="mode" data-mode="week">週</button><button class="mode active" data-mode="month">月</button><button class="mode" data-mode="ytd">YTD</button></div></div>
+<header><div class="wrap"><div class="brand-row"><div class="brand">巧展實業｜董事長營運洞察</div><div class="badge" id="sourceBadge">動態管線接入版｜最新 2026/11/22</div></div><h1 id="title"></h1><div class="period" id="period"></div><div class="controls"><div class="datebox"><button id="prevBtn">‹</button><input id="datePicker" type="date"><span id="weekdayBadge" class="weekday-badge weekday"></span><button id="nextBtn">›</button></div><div class="switch"><button class="mode" data-mode="day">日</button><button class="mode" data-mode="week">週</button><button class="mode active" data-mode="month">月</button><button class="mode" data-mode="ytd">YTD</button></div></div>
 
 <div id="monthCompareBar" style="display:none;margin-top:10px;padding:8px 14px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;align-items:center;gap:14px;flex-wrap:wrap;">
 
@@ -142,7 +142,7 @@ main{padding:14px 12px 40px}.block{background:#fff;border:1px solid var(--line);
 
   <span id="monthCompareNote" style="color:#64748b;font-size:11px;"></span>
 
-</div><div class="data-note" id="dataNote"></div><div class="data-note" id="sourceStatusBar" style="display:flex;gap:14px;flex-wrap:wrap;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;font-size:12px;"><span>📦 <b>訂單資料：</b>涵蓋至 <b id="statOrdersCoverage">2026/10/25</b>（最後訂單 <b id="statOrdersLastTrade">2026/10/23</b>）</span><span>✍️ <b>每日簽核：</b>最新記錄至 <b id="statSignDate">2026/11/10</b></span><span>📑 <b>正式營業實績：</b>更新至 <b id="statActualDate">10 月</b>（正式月報）</span><span>⚙️ <b>設備實際產量：</b>更新至 <b id="statEquipDate">10 月</b>（正式月報）</span></div><div class="nav"><a href="#summary">本期先看</a><a href="#indicatorMap">七指標</a><a href="#overview">摘要</a><a href="#machine">設備</a><a href="#signoff">簽核</a><a href="#target">目標</a><a href="#customer">核心客戶</a><a href="#new">新客</a><a href="#dormant">舊客</a><a href="#shipment">未出貨</a><a href="#product">產品</a><a href="#dong">東澤</a></div></div></header>
+</div><div class="data-note" id="dataNote"></div><div class="data-note" id="sourceStatusBar" style="display:flex;gap:14px;flex-wrap:wrap;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;font-size:12px;"><span>📦 <b>訂單資料：</b>涵蓋至 <b id="statOrdersCoverage">2026/11/22</b>（最後訂單 <b id="statOrdersLastTrade">2026/11/21</b>）</span><span>✍️ <b>每日簽核：</b>最新記錄至 <b id="statSignDate">2026/11/22</b></span><span>📑 <b>正式營業實績：</b>更新至 <b id="statActualDate">10 月</b>（正式月報）</span><span>⚙️ <b>設備實際產量：</b>更新至 <b id="statEquipDate">10 月</b>（正式月報）</span></div><div class="nav"><a href="#summary">本期先看</a><a href="#indicatorMap">七指標</a><a href="#overview">摘要</a><a href="#machine">設備</a><a href="#signoff">簽核</a><a href="#target">目標</a><a href="#customer">核心客戶</a><a href="#new">新客</a><a href="#dormant">舊客</a><a href="#shipment">未出貨</a><a href="#product">產品</a><a href="#dong">東澤</a></div></div></header>
 <div id="shipmentNoticeBanner" style="background:#e0f2fe;border-bottom:1px solid #bae6fd;padding:8px 18px;font-size:12px;color:#0369a1;display:flex;align-items:center;justify-content:space-between;">
   <span>📦 <b>11/10 出退整合試算版：</b>依巧展工程師 11/10 最新訂單（含出退）與簽核資料建置，全指標採「實際出貨日認列出貨、實際出退日認列退貨」之出退整合口徑，完工未出貨採獨立工單快照，每日簽核更新至 11/10。<span style="display:inline-block;margin-left:6px;color:#0369a1;font-size:11px;">（⚠️ 退貨成本與毛利係依原料製程比例估算之試算口徑，待 ERP 正式銷退成本認列報表審定，未宣稱財務對帳全數完成）</span></span>
   <span style="font-weight:bold;color:#0284c7;background:#fff;padding:2px 8px;border-radius:12px;border:1px solid #7dd3fc;">獨立驗證版</span>
@@ -250,7 +250,7 @@ const EQUIP={"2026-01": [{"name": "FLORA", "code": "I005", "capacity": 22000.0, 
 
 const PROD={"2026-01": {"finished": [{"process": "NC", "qty": 200, "area": 1135, "avg": 5.675}, {"process": "車動", "qty": 18857, "area": 18672, "avg": 0.9901893196160577}, {"process": "組立", "qty": 2538, "area": 3988.5, "avg": 1.5715130023640662}, {"process": "雷射", "qty": 6853, "area": 10519.5, "avg": 1.5350211586166642}], "largeformat": [{"process": "美工", "qty": 26252.5, "area": 364125.0, "avg": 13.8701}, {"process": "大機輸出", "qty": 3334.0, "area": 225117.0, "avg": 67.5216}, {"process": "小機輸出", "qty": 16378.0, "area": 126609.5, "avg": 7.7305}, {"process": "UV輸出", "qty": 6315.0, "area": 16420.0, "avg": 2.6002}, {"process": "後製", "qty": 46258.0, "area": 517813.5, "avg": 11.194}]}, "2026-02": {"finished": [{"process": "NC", "qty": 785, "area": 1763.5, "avg": 2.246496815286624}, {"process": "車動", "qty": 19259.8, "area": 19965, "avg": 1.0366151258060832}, {"process": "組立", "qty": 2146, "area": 4554.5, "avg": 2.1223205964585277}, {"process": "雷射", "qty": 5122, "area": 7503, "avg": 1.464857477547833}], "largeformat": [{"process": "美工", "qty": 23488.0, "area": 283887.5, "avg": 12.0865}, {"process": "大機輸出", "qty": 2889.0, "area": 175292.0, "avg": 60.6757}, {"process": "小機輸出", "qty": 13053.0, "area": 95722.5, "avg": 7.3334}, {"process": "UV輸出", "qty": 7620.0, "area": 12614.0, "avg": 1.6554}, {"process": "後製", "qty": 34307.0, "area": 351493.0, "avg": 10.2455}]}, "2026-03": {"finished": [{"process": "NC", "qty": 175, "area": 538, "avg": 3.0742857142857143}, {"process": "車動", "qty": 18315, "area": 24124.5, "avg": 1.317199017199017}, {"process": "組立", "qty": 2397, "area": 4870, "avg": 2.031706299541093}, {"process": "雷射", "qty": 6852, "area": 11228.5, "avg": 1.6387186223000583}], "largeformat": [{"process": "美工", "qty": 22236.0, "area": 344075.0, "avg": 15.4738}, {"process": "大機輸出", "qty": 3847.0, "area": 210603.0, "avg": 54.7447}, {"process": "小機輸出", "qty": 11670.0, "area": 119571.5, "avg": 10.2461}, {"process": "UV輸出", "qty": 6156.0, "area": 13135.5, "avg": 2.1338}, {"process": "後製", "qty": 30199.0, "area": 447259.5, "avg": 14.8104}]}, "2026-04": {"finished": [{"process": "NC", "qty": 218, "area": 1194, "avg": 5.477064220183486}, {"process": "車動", "qty": 63309.4, "area": 22172, "avg": 0.3502165555194015}, {"process": "組立", "qty": 2411, "area": 5969.5, "avg": 2.475943591870593}, {"process": "雷射", "qty": 8138, "area": 14163, "avg": 1.740353895305972}], "largeformat": [{"process": "美工", "qty": 33931.0, "area": 376194.0, "avg": 11.087}, {"process": "大機輸出", "qty": 4284.0, "area": 228983.0, "avg": 53.4507}, {"process": "小機輸出", "qty": 17578.0, "area": 131281.0, "avg": 7.4685}, {"process": "UV輸出", "qty": 11929.0, "area": 16460.5, "avg": 1.3799}, {"process": "後製", "qty": 37830.0, "area": 471459.0, "avg": 12.4626}]}, "2026-05": {"finished": [{"process": "NC", "qty": 267, "area": 949, "avg": 3.554307116104869}, {"process": "車動", "qty": 10243, "area": 21482.5, "avg": 2.0972859513814313}, {"process": "組立", "qty": 2020, "area": 4345.5, "avg": 2.151237623762376}, {"process": "雷射", "qty": 5888, "area": 10861, "avg": 1.8445991847826086}], "largeformat": [{"process": "美工", "qty": 24115.0, "area": 292866.0, "avg": 12.1446}, {"process": "大機輸出", "qty": 3508.0, "area": 165085.0, "avg": 47.0596}, {"process": "小機輸出", "qty": 13330.0, "area": 114314.0, "avg": 8.5757}, {"process": "UV輸出", "qty": 5034.0, "area": 13165.5, "avg": 2.6153}, {"process": "後製", "qty": 30058.0, "area": 368486.0, "avg": 12.2592}]}, "2026-06": {"finished": [{"process": "NC", "qty": 3051, "area": 3594, "avg": 1.1779744346116028}, {"process": "車動", "qty": 31046, "area": 29396.5, "avg": 0.9468691618888102}, {"process": "組立", "qty": 5280, "area": 6376, "avg": 1.2075757575757575}, {"process": "雷射", "qty": 12530, "area": 12468, "avg": 0.9950518754988029}], "largeformat": [{"process": "美工", "qty": 39274.0, "area": 404240.0, "avg": 10.2928}, {"process": "大機輸出", "qty": 3959.0, "area": 260942.0, "avg": 65.9111}, {"process": "小機輸出", "qty": 14042.0, "area": 118914.0, "avg": 8.4685}, {"process": "UV輸出", "qty": 20961.0, "area": 23850.0, "avg": 1.1378}, {"process": "後製", "qty": 27281.0, "area": 358799.0, "avg": 13.152}]}, "2026-07": {"finished": [{"process": "NC", "qty": 1530, "area": 2875.5, "avg": 1.8794117647058823}, {"process": "車動", "qty": 14872.4, "area": 22594, "avg": 1.5191899088243996}, {"process": "組立", "qty": 4968, "area": 4786.5, "avg": 0.9634661835748792}, {"process": "雷射", "qty": 7436, "area": 9994, "avg": 1.3440021516944594}], "largeformat": [{"process": "美工", "qty": 23221.0, "area": 329236.5, "avg": 14.1784}, {"process": "大機輸出", "qty": 3145.0, "area": 215688.0, "avg": 68.5812}, {"process": "小機輸出", "qty": 11319.0, "area": 101722.0, "avg": 8.9868}, {"process": "UV輸出", "qty": 7436.0, "area": 14512.5, "avg": 1.9517}, {"process": "後製", "qty": 23442.0, "area": 364541.0, "avg": 15.5508}]}, "2026-08": {"finished": [{"process": "NC", "qty": 7604, "area": 8270, "avg": 1.087585481325618}, {"process": "車動", "qty": 13620.4, "area": 27736, "avg": 2.0363572288625886}, {"process": "組立", "qty": 2584, "area": 5662, "avg": 2.1911764705882355}, {"process": "雷射", "qty": 9556, "area": 14469, "avg": 1.5141272498953537}], "largeformat": [{"process": "美工", "qty": 28370.0, "area": 430920.0, "avg": 15.1893}, {"process": "大機輸出", "qty": 4693.0, "area": 285583.0, "avg": 60.853}, {"process": "小機輸出", "qty": 17029.0, "area": 131600.0, "avg": 7.728}, {"process": "UV輸出", "qty": 6749.0, "area": 16787.0, "avg": 2.4873}, {"process": "後製", "qty": 27997.0, "area": 344998.0, "avg": 12.3227}]}, "2026-09": {"finished": [{"process": "NC", "qty": 422, "area": 1154.5, "avg": 2.735781990521327}, {"process": "鑽", "qty": 21193, "area": 32675, "avg": 1.5417826640871986}, {"process": "拋光", "qty": 2776, "area": 5520.5, "avg": 1.9886527377521614}, {"process": "雷射", "qty": 8239, "area": 13595.5, "avg": 1.650139580046122}], "largeformat": [{"process": "美工", "qty": 38215.0, "area": 558913.5, "avg": 14.6255}, {"process": "大機輸出", "qty": 6362.0, "area": 389647.0, "avg": 61.246}, {"process": "小機輸出", "qty": 21550.0, "area": 157297.0, "avg": 7.2992}, {"process": "UV輸出", "qty": 9656.0, "area": 20706.0, "avg": 2.1444}, {"process": "後製", "qty": 33310.0, "area": 267030.0, "avg": 8.0165}]}, "2026-10": {"finished": [{"process": "NC", "qty": 960.0, "area": 1655.5, "avg": 1.7244791666666666}, {"process": "車動", "qty": 22863.0, "area": 38764.5, "avg": 1.6955123999475135}, {"process": "組立", "qty": 3214.0, "area": 5070.0, "avg": 1.5774735532047293}, {"process": "雷射", "qty": 5780.0, "area": 8348.0, "avg": 1.4442906574394463}], "largeformat": [{"process": "美工", "qty": 26150.0, "area": 447228.5, "avg": 17.1024}, {"process": "大機輸出", "qty": 5657.0, "area": 314769.0, "avg": 55.6424}, {"process": "小機輸出", "qty": 15338.0, "area": 120907.0, "avg": 7.8828}, {"process": "UV輸出", "qty": 4115.0, "area": 10897.5, "avg": 2.6482}, {"process": "後製", "qty": 20158.0, "area": 187176.0, "avg": 9.2854}]}};
 
-const SIGN={"2026-01": {"total": 50630, "manager": 7870, "onsite": 42760, "manager_share": 15.54, "onsite_share": 84.46, "admin": 6574, "admin1": 14, "Dora": 1282}, "2026-02": {"total": 39776, "manager": 7517, "onsite": 32259, "manager_share": 18.9, "onsite_share": 81.1, "admin": 6481, "admin1": 11, "Dora": 1025}, "2026-03": {"total": 47135, "manager": 9525, "onsite": 37610, "manager_share": 20.21, "onsite_share": 79.79, "admin": 8223, "admin1": 11, "Dora": 1291}, "2026-04": {"total": 51134, "manager": 11438, "onsite": 39696, "manager_share": 22.37, "onsite_share": 77.63, "admin": 10160, "admin1": 1, "Dora": 1277}, "2026-05": {"total": 49251, "manager": 11750, "onsite": 37501, "manager_share": 23.86, "onsite_share": 76.14, "admin": 10376, "admin1": 5, "Dora": 1369}, "2026-06": {"total": 51925, "manager": 14322, "onsite": 37603, "manager_share": 27.58, "onsite_share": 72.42, "admin": 13024, "admin1": 8, "Dora": 1290}, "2026-07": {"total": 44310, "manager": 10997, "onsite": 33313, "manager_share": 24.82, "onsite_share": 75.18, "admin": 9702, "admin1": 5, "Dora": 1290}, "2026-08": {"total": 53695, "manager": 14316, "onsite": 39379, "manager_share": 26.66, "onsite_share": 73.34, "admin": 13285, "admin1": 12, "Dora": 1019}, "2026-09": {"total": 58645, "manager": 18914, "onsite": 39731, "manager_share": 32.25, "onsite_share": 67.75, "admin": 18094, "admin1": 4, "Dora": 816}, "2026-10": {"total": 47503, "manager": 15313, "onsite": 32190, "manager_share": 32.24, "onsite_share": 67.76, "admin": 14707, "admin1": 6, "Dora": 600}, "2026-11": {"total": 31241, "manager": 10148, "onsite": 21093, "manager_share": 32.48, "onsite_share": 67.52, "admin": 9768, "admin1": 2, "Dora": 378}};
+const SIGN={"2026-01": {"total": 50630, "manager": 7870, "onsite": 42760, "manager_share": 15.54, "onsite_share": 84.46, "admin": 6574, "admin1": 14, "Dora": 1282}, "2026-02": {"total": 39776, "manager": 7517, "onsite": 32259, "manager_share": 18.9, "onsite_share": 81.1, "admin": 6481, "admin1": 11, "Dora": 1025}, "2026-03": {"total": 47135, "manager": 9525, "onsite": 37610, "manager_share": 20.21, "onsite_share": 79.79, "admin": 8223, "admin1": 11, "Dora": 1291}, "2026-04": {"total": 51134, "manager": 11438, "onsite": 39696, "manager_share": 22.37, "onsite_share": 77.63, "admin": 10160, "admin1": 1, "Dora": 1277}, "2026-05": {"total": 49251, "manager": 11750, "onsite": 37501, "manager_share": 23.86, "onsite_share": 76.14, "admin": 10376, "admin1": 5, "Dora": 1369}, "2026-06": {"total": 51925, "manager": 14322, "onsite": 37603, "manager_share": 27.58, "onsite_share": 72.42, "admin": 13024, "admin1": 8, "Dora": 1290}, "2026-07": {"total": 44310, "manager": 10997, "onsite": 33313, "manager_share": 24.82, "onsite_share": 75.18, "admin": 9702, "admin1": 5, "Dora": 1290}, "2026-08": {"total": 53695, "manager": 14316, "onsite": 39379, "manager_share": 26.66, "onsite_share": 73.34, "admin": 13285, "admin1": 12, "Dora": 1019}, "2026-09": {"total": 58645, "manager": 18914, "onsite": 39731, "manager_share": 32.25, "onsite_share": 67.75, "admin": 18094, "admin1": 4, "Dora": 816}, "2026-10": {"total": 47503, "manager": 15313, "onsite": 32190, "manager_share": 32.24, "onsite_share": 67.76, "admin": 14707, "admin1": 6, "Dora": 600}, "2026-11": {"total": 50436, "manager": 17680, "onsite": 32756, "manager_share": 35.05, "onsite_share": 64.95, "admin": 17019, "admin1": 5, "Dora": 656}};
 
 const DYN=typeof window!=='undefined'&&window.DYNAMIC_DASHBOARD?window.DYNAMIC_DASHBOARD:null;
 
@@ -3928,7 +3928,7 @@ function ensureModeDataLoaded(targetMode) {
   if (targetMode !== 'day' && targetMode !== 'week') return Promise.resolve(true);
   if (window.__LOADED_DATA_BUNDLES && window.__LOADED_DATA_BUNDLES[targetMode]) return Promise.resolve(true);
   if (_modeBundlePromises[targetMode]) return _modeBundlePromises[targetMode];
-  const ver = encodeURIComponent(window.BUNDLE_VERSION || '20261120');
+  const ver = encodeURIComponent(window.BUNDLE_VERSION || '20261122');
   const src = `./dashboard_data_${targetMode}.js?v=${ver}`;
   _modeBundlePromises[targetMode] = new Promise((resolve, reject) => {
     const sc = document.createElement('script');
@@ -5538,7 +5538,7 @@ function loadUnshippedShard(mKey, callback) {
   }
   window.__UNSHIPPED_SHARDS_LOADING[mKey] = true;
   const script = document.createElement('script');
-  script.src = 'shards/unshipped_shard_' + mKey.replace('-', '_') + '.js?v=' + encodeURIComponent(window.BUNDLE_VERSION || '20261120');
+  script.src = 'shards/unshipped_shard_' + mKey.replace('-', '_') + '.js?v=' + encodeURIComponent(window.BUNDLE_VERSION || '20261122');
   script.onload = () => {
     window.__UNSHIPPED_SHARDS_LOADING[mKey] = false;
     if (callback) callback();
@@ -5597,18 +5597,17 @@ function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilte
   const rawList = mergedShip.ordersList || [];
   const anomaliesList = mergedShip.deliveryAnomalies || [];
 
+  const isEarlyCheck = (o) => Boolean(o.isEarly ?? o.isEarlyOrder);
   const filterVal = currentFilter || '全部';
   let filtered = rawList;
-  if (filterVal === '已到期未出') {
-    filtered = rawList.filter(o => !o.isEarly);
+  if (filterVal === '已到期未出' || filterVal === '逾預計出貨日') {
+    filtered = rawList.filter(o => !isEarlyCheck(o));
   } else if (filterVal === '提前完工備料') {
-    filtered = rawList.filter(o => o.isEarly);
+    filtered = rawList.filter(o => isEarlyCheck(o));
   } else if (filterVal === '完工未出金額為零') {
     filtered = rawList.filter(o => o.completedUnshippedAmt === 0 || o.isZero);
   } else if (filterVal === '含零額工單') {
     filtered = rawList.filter(o => o.zeroAmountWorkOrderCount > 0 || (o.items && o.items.some(it => it.isCompletedUnshippedWO && it.net === 0)));
-  } else if (filterVal === '逾預計出貨日') {
-    filtered = rawList.filter(o => o.isOverdue);
   } else if (filterVal === '交期異常待查') {
     // 異常清單由專屬 10 欄表格呈現
   } else if (filterVal !== '全部') {
@@ -5658,31 +5657,30 @@ function renderUnshippedDrilldownHtml(mode, drillMonth, cutoffDate, currentFilte
     ? `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:bold;border-radius:4px;background:#15803d;color:#fff;margin-right:6px;">【管理月期末重建快照】</span>`
     : `<span style="display:inline-block;padding:2px 8px;font-size:11px;font-weight:bold;border-radius:4px;background:#0369a1;color:#fff;margin-right:6px;">【依現存 ERP 明細歷史重建】</span>`;
 
+  const earlyOrdersCount = (s.earlyOrders != null) ? s.earlyOrders : rawList.filter(isEarlyCheck).length;
+  const dueOrdersCount = (s.dueOrders != null) ? s.dueOrders : (rawList.length > 0 ? rawList.filter(o => !isEarlyCheck(o)).length : ((s.orders || 0) - earlyOrdersCount));
+
   const calloutHtml = `
   <div class="callout" style="margin-top:10px;margin-bottom:14px;font-size:12px;line-height:1.7;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;">
     <div style="margin-bottom:6px;">${badgeHtml}<b>時點快照資料來源：</b>${isOfficial ? '依 ERP 現存明細核對之管理月期末結算重建快照。' : '依現存 ERP 訂單與工單明細歷史回推重建（非當日官方快照存檔；可能受事後改單、跨日過帳影響）。'}</div>
-    • <b>完工未出貨定案原則（選項 A）：</b>納入標準為「工單完工日 ≤ 基準日」、「截至基準日尚未出貨」且排除庫存生產單之全部工單（<b>${fmt(s.completedUnshippedWorkOrders)} 工單</b>、待出金額 <b>${money(s.completedUnshippedAmt)}</b>、<b>${fmt(s.orders)} 單</b>、<b>${fmt(s.customers)} 戶</b>）。<br>
+    • <b>完工未出貨定案原則（選項 A）：</b>納入標準為「工單完工日 ≤ 基準日」、「截至基準日尚未出貨」且排除庫存生產單之全部工單（<b>${fmt(s.orders)} 訂單／${fmt(s.completedUnshippedWorkOrders)} 工單</b>，待出金額 <b>${money(s.completedUnshippedAmt)}</b>，涵蓋客戶 <b>${fmt(s.customers || 0)} 戶</b>）。<br>
     • <b>管理分類分析（不影響總數）：</b><br>
-      &nbsp;&nbsp;1. <b>已到期未出貨（已達或逾交件日）：</b>共 <b>${fmt(s.dueWorkOrders ?? 0)} 工單</b>（待出金額 <b>${money(s.dueAmt ?? 0)}</b>），屬需優先追蹤出貨之工單。<br>
-      &nbsp;&nbsp;2. <b>提前完工備料（未到預計交件日）：</b>共 <b>${fmt(s.earlyWorkOrders ?? 0)} 工單</b>（待出金額 <b>${money(s.earlyAmt ?? 0)}</b>），屬產線提早製作完成之備貨工單。<br>
+      &nbsp;&nbsp;1. <b>已到期未出貨（已達或逾交件日）：</b>共 <b>${fmt(dueOrdersCount)} 訂單／${fmt(s.dueWorkOrders ?? 0)} 工單</b>（待出金額 <b>${money(s.dueAmt ?? 0)}</b>），屬需優先追蹤出貨之工單。<br>
+      &nbsp;&nbsp;2. <b>提前完工備料（未到預計交件日）：</b>共 <b>${fmt(earlyOrdersCount)} 訂單／${fmt(s.earlyWorkOrders ?? 0)} 工單</b>（待出金額 <b>${money(s.earlyAmt ?? 0)}</b>），屬產線提早製作完成之備貨工單。<br>
     • <b>零額工單與等待天數：</b>保留零淨額工單共 <b>${fmt(s.zeroWorkOrders)} 張</b>（全數計入工單數統計，不得因淨額為 0 刪除）；最長等待天數為 <b>${s.maxWaitDays} 天</b>，平均等待天數為 <b>${s.avgWaitDays} 天</b>，清楚區分不可混淆。
   </div>`;
 
-  const earlyOrdersCount = rawList.filter(o => o.isEarly).length;
-  const dueOrdersCount = rawList.filter(o => !o.isEarly).length;
-
   const filters = [
-    { key: '全部', label: `全部 (${s.orders})` },
-    { key: '已到期未出', label: `已到期未出 (${dueOrdersCount})` },
-    { key: '提前完工備料', label: `提前完工備料 (${earlyOrdersCount})` },
-    { key: '0–7日', label: `0–7 日 (${s.rangeBreakdown['0–7日']||0})` },
-    { key: '8–30日', label: `8–30 日 (${s.rangeBreakdown['8–30日']||0})` },
-    { key: '31–60日', label: `31–60 日 (${s.rangeBreakdown['31–60日']||0})` },
-    { key: '61–90日', label: `61–90 日 (${s.rangeBreakdown['61–90日']||0})` },
-    { key: '90日以上', label: `90 日以上 (${s.rangeBreakdown['90日以上']||0})` },
+    { key: '全部', label: `全部 (${s.orders}單 / ${s.completedUnshippedWorkOrders}工單)` },
+    { key: '已到期未出', label: `已到期未出 (${dueOrdersCount}單 / ${s.dueWorkOrders ?? 0}工單)` },
+    { key: '提前完工備料', label: `提前完工備料 (${earlyOrdersCount}單 / ${s.earlyWorkOrders ?? 0}工單)` },
+    { key: '0–7日', label: `0–7 日 (${s.rangeBreakdown ? (s.rangeBreakdown['0–7日']||0) : 0})` },
+    { key: '8–30日', label: `8–30 日 (${s.rangeBreakdown ? (s.rangeBreakdown['8–30日']||0) : 0})` },
+    { key: '31–60日', label: `31–60 日 (${s.rangeBreakdown ? (s.rangeBreakdown['31–60日']||0) : 0})` },
+    { key: '61–90日', label: `61–90 日 (${s.rangeBreakdown ? (s.rangeBreakdown['61–90日']||0) : 0})` },
+    { key: '90日以上', label: `90 日以上 (${s.rangeBreakdown ? (s.rangeBreakdown['90日以上']||0) : 0})` },
     { key: '完工未出金額為零', label: `完工未出金額為零 (${s.zeroOrders})` },
     { key: '含零額工單', label: `含零額工單 (${s.hasZeroWorkOrdersCount})` },
-    { key: '逾預計出貨日', label: `逾預計出貨日 (${s.overdueOrders})` },
     { key: '交期異常待查', label: `交期異常待查 (${s.deliveryAnomalyCount})` }
   ];
 

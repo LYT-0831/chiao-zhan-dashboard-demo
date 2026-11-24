@@ -2,7 +2,7 @@
 
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
-<title>巧展｜董事長營運洞察（11/10 出退整合試算版）</title>
+<title>巧展｜董事長營運洞察（11/22 出退整合版）</title>
 
 <script src="./dashboard_data_core.js?v=20261122"></script>
 <script>
@@ -144,7 +144,7 @@ main{padding:14px 12px 40px}.block{background:#fff;border:1px solid var(--line);
 
 </div><div class="data-note" id="dataNote"></div><div class="data-note" id="sourceStatusBar" style="display:flex;gap:14px;flex-wrap:wrap;background:#edf4fb;border:1px solid #c9dcf0;color:#153e72;font-size:12px;"><span>📦 <b>訂單資料：</b>涵蓋至 <b id="statOrdersCoverage">2026/11/22</b>（最後訂單 <b id="statOrdersLastTrade">2026/11/21</b>）</span><span>✍️ <b>每日簽核：</b>最新記錄至 <b id="statSignDate">2026/11/22</b></span><span>📑 <b>正式營業實績：</b>更新至 <b id="statActualDate">10 月</b>（正式月報）</span><span>⚙️ <b>設備實際產量：</b>更新至 <b id="statEquipDate">10 月</b>（正式月報）</span></div><div class="nav"><a href="#summary">本期先看</a><a href="#indicatorMap">七指標</a><a href="#overview">摘要</a><a href="#machine">設備</a><a href="#signoff">簽核</a><a href="#target">目標</a><a href="#customer">核心客戶</a><a href="#new">新客</a><a href="#dormant">舊客</a><a href="#shipment">未出貨</a><a href="#product">產品</a><a href="#dong">東澤</a></div></div></header>
 <div id="shipmentNoticeBanner" style="background:#e0f2fe;border-bottom:1px solid #bae6fd;padding:8px 18px;font-size:12px;color:#0369a1;display:flex;align-items:center;justify-content:space-between;">
-  <span>📦 <b>11/10 出退整合試算版：</b>依巧展工程師 11/10 最新訂單（含出退）與簽核資料建置，全指標採「實際出貨日認列出貨、實際出退日認列退貨」之出退整合口徑，完工未出貨採獨立工單快照，每日簽核更新至 11/10。<span style="display:inline-block;margin-left:6px;color:#0369a1;font-size:11px;">（⚠️ 退貨成本與毛利係依原料製程比例估算之試算口徑，待 ERP 正式銷退成本認列報表審定，未宣稱財務對帳全數完成）</span></span>
+  <span>📦 <b>11/22 出退整合版：</b>依巧展 ERP 截至 2026/11/22 完整訂單（含出退）與簽核資料建置，全指標採「實際出貨日認列出貨、實際出退日認列退貨」之出退整合口徑，完工未出貨採獨立工單快照，每日簽核更新至 11/22。<span style="display:inline-block;margin-left:6px;color:#0369a1;font-size:11px;">（⚠️ 退貨成本與毛利係依原料製程比例估算之試算口徑，待 ERP 正式銷退成本認列報表審定，未宣稱財務對帳全數完成）</span></span>
   <span style="font-weight:bold;color:#0284c7;background:#fff;padding:2px 8px;border-radius:12px;border:1px solid #7dd3fc;">獨立驗證版</span>
 </div>
 
@@ -234,7 +234,7 @@ main{padding:14px 12px 40px}.block{background:#fff;border:1px solid var(--line);
 
 <section class="block" id="dong"><div class="block-title purplebar">東澤分析專區</div><div class="content" id="dongContent"></div><div class="improve-footer"><button class="improve-btn" data-improve="dong">查看改善方式</button></div></section>
 
-<div class="footer">出貨單／訂單最新至 2026/11/10，簽核至 2026/11/10；巧展管理月 26～25；月度資料（營業實績、設備產能、製品生產、大圖廠務）已更新至 2026 年 10 月，其餘動態接入。</div>
+<div class="footer">出貨單／訂單最新至 2026/11/22，簽核至 2026/11/22；巧展管理月 26～25；月度資料（營業實績、設備產能、製品生產、大圖廠務）已更新至 2026 年 10 月，其餘動態接入。</div>
 
 </main>
 
@@ -254,7 +254,7 @@ const SIGN={"2026-01": {"total": 50630, "manager": 7870, "onsite": 42760, "manag
 
 const DYN=typeof window!=='undefined'&&window.DYNAMIC_DASHBOARD?window.DYNAMIC_DASHBOARD:null;
 
-const EARLIEST=DYN?.earliestDate||'2025-12-26',LATEST=DYN?.maxDate||'2026-11-10';let mode='month'; window.mode=mode;
+const EARLIEST=DYN?.earliestDate||'2025-12-26',LATEST=DYN?.maxDate||'2026-11-22';let mode='month'; window.mode=mode;
 
 const $=id=>document.getElementById(id);const pad=n=>String(n).padStart(2,'0');
 
@@ -476,9 +476,11 @@ function normalizeSummary(raw){
 
   s.customers=typeof ord.customers==='number'?ord.customers:(typeof raw.customers==='number'?raw.customers:0);
 
-  s.new_count=raw.new?.customers??raw.new_count??0;
-
-  s.new_net=raw.new?.net??raw.new_net??0;
+  const ncFallbackSource = (typeof window !== 'undefined' && window.NEW_CUSTOMER_DRILLDOWN) ? (window.NEW_CUSTOMER_DRILLDOWN.month) : null;
+  const rawKeyNC = raw.month || raw.periodStart || raw.snapshotDate;
+  const ncF = (ncFallbackSource && rawKeyNC) ? ncFallbackSource[rawKeyNC] : null;
+  s.new_count=raw.new?.customers??raw.new_count??(ncF?.totalCount??0);
+  s.new_net=raw.new?.net??raw.new_net??(ncF?.totalNet??0);
 
   s.new_customers=raw.new_customers||(raw.new?.customersDetail||[]);
 
@@ -1044,7 +1046,7 @@ function signTrendRows(maxMonth){
     const k=`2026-${pad(m)}`;
     const dynM=DYN?.periods?.month?.[k];
     const isUnfin = (m === 11);
-    const signCutoffMD = (DYN?.sourcesMeta?.signoff?.latest || "2026-11-10").slice(5).replace("-","/"); const mLabel = isUnfin ? `${m} 月 <span style="font-size:11px;color:#c2410c;font-weight:normal;">(未完整，截至 ${signCutoffMD})</span>` : `${m} 月`;
+    const signCutoffMD = (DYN?.sourcesMeta?.signoff?.latest || "2026-11-22").slice(5).replace("-","/"); const mLabel = isUnfin ? `${m} 月 <span style="font-size:11px;color:#c2410c;font-weight:normal;">(未完整，截至 ${signCutoffMD})</span>` : `${m} 月`;
     if(dynM&&dynM.signoff){
       rows+=`<tr><td>${mLabel}</td><td class="num">${fmt(dynM.signoff.total)}</td><td class="num">${dynM.signoff.otherShare!=null?dynM.signoff.otherShare.toFixed(2)+'%':'-'}</td><td class="num">${dynM.signoff.managerShare!=null?dynM.signoff.managerShare.toFixed(2)+'%':'-'}</td></tr>`;
     } else if(typeof SIGN!=='undefined'&&SIGN[k]){
@@ -2644,7 +2646,7 @@ function render(){
 
   if(unfinMonth){
     const dStartW = parseLocal(s.start || '2026-10-26');
-    const dEffW = parseLocal(eff || s.effectiveEnd || (DYN?.sourcesMeta?.orders?.latest || '2026-11-10'));
+    const dEffW = parseLocal(eff || s.effectiveEnd || (DYN?.sourcesMeta?.orders?.latest || '2026-11-22'));
     const nDaysW = (dStartW && dEffW) ? Math.max(1, Math.round((dEffW - dStartW) / 86400000) + 1) : 16;
     wb.textContent=`（進行中月份・截至 ${fmtDateW(eff || dEffW)} 共 ${nDaysW} 天）`;
     wb.className='weekday-badge weekend';
@@ -2652,7 +2654,7 @@ function render(){
 
   $('title').textContent=titleLabel(selected,key,s);
 
-  const ordCutoff = DYN?.sourcesMeta?.orders?.latest || '2026-11-10';
+  const ordCutoff = DYN?.sourcesMeta?.orders?.latest || '2026-11-22';
   let baseCutoff = s?.end || selected;
   if(mode === 'month') {
     const mEndStr = mgmtMonthEnd(key);
@@ -2685,13 +2687,13 @@ function render(){
 
 
 
-  if($('statOrdersCoverage')) $('statOrdersCoverage').textContent=(DYN?.sourcesMeta?.orders?.coverageEnd||DYN?.sourcesMeta?.orders?.latest||'2026/11/10').replaceAll('-','/');
+  if($('statOrdersCoverage')) $('statOrdersCoverage').textContent=(DYN?.sourcesMeta?.orders?.coverageEnd||DYN?.sourcesMeta?.orders?.latest||'2026/11/22').replaceAll('-','/');
 
-  if($('statOrdersLastTrade')) $('statOrdersLastTrade').textContent=(DYN?.sourcesMeta?.orders?.lastTradingDate||'2026/11/10').replaceAll('-','/');
+  if($('statOrdersLastTrade')) $('statOrdersLastTrade').textContent=(DYN?.sourcesMeta?.orders?.lastTradingDate||'2026/11/21').replaceAll('-','/');
 
-  if($('statOrdersDate')) $('statOrdersDate').textContent=(DYN?.sourcesMeta?.orders?.latest||'2026/11/10').replaceAll('-','/');
+  if($('statOrdersDate')) $('statOrdersDate').textContent=(DYN?.sourcesMeta?.orders?.latest||'2026/11/22').replaceAll('-','/');
 
-  if($('statSignDate')) $('statSignDate').textContent=(DYN?.sourcesMeta?.signoff?.latest||'2026/11/10').replaceAll('-','/');
+  if($('statSignDate')) $('statSignDate').textContent=(DYN?.sourcesMeta?.signoff?.latest||'2026/11/22').replaceAll('-','/');
 
   if($('statActualDate')) $('statActualDate').textContent=(DYN?.sourcesMeta?.actual?.latest||'2026-10')+'（正式月報）';
 
@@ -2711,7 +2713,9 @@ function render(){
 
     const isSeptNote = '';
 
-    items.push(`${tag('目標','red')}<strong>${mode==='month'?'本月':'YTD'}調整後目標達成率 ${r.toFixed(2)}%${isSeptNote}</strong>，使用巧展正式實績。`);
+    const isFallbackTarget = (!TARGET[key] && targetObj);
+    const targetScopeLabel = (mode === 'ytd') ? 'YTD' : (isFallbackTarget ? '最近完整管理月（10 月）' : '本月');
+    items.push(`${tag('目標','red')}<strong>${targetScopeLabel}調整後目標達成率 ${r.toFixed(2)}%${isSeptNote}</strong>，使用巧展正式實績。`);
 
   }
 
@@ -2789,7 +2793,13 @@ function render(){
 
   if(!noOrders){
 
-    items.push(`${tag('新客','green')}<strong>新客 ${s?.new_count || 0} 間</strong>，本期新客訂單淨額 ${wan(s?.new_net || 0)}`);
+    const ncSource = (typeof NEW_CUSTOMER_DRILLDOWN !== 'undefined' ? NEW_CUSTOMER_DRILLDOWN : (typeof window !== 'undefined' ? window.NEW_CUSTOMER_DRILLDOWN : null)) || {};
+    const ncPool = ncSource[mode] || ncSource['month'] || {};
+    const ncData = ncPool[key] || null;
+    const mergedNew = (typeof getMergedNewCustomersData === 'function') ? getMergedNewCustomersData(ncData, currentNewCustomerBranches) : ncData;
+    const nCnt = (mergedNew && mergedNew.totalCount != null) ? mergedNew.totalCount : (s?.new_count || 0);
+    const nNet = (mergedNew && mergedNew.totalNet != null) ? mergedNew.totalNet : (s?.new_net || 0);
+    items.push(`${tag('新客','green')}<strong>新客 ${nCnt} 間</strong>，本期新客首單淨額 ${wan(nNet)}`);
 
   }
 
@@ -2890,7 +2900,9 @@ function render(){
 
     $('machineContent').innerHTML = '<div class="warn"><b>目前尚無未完整管理月資料：</b>請點選「選項 A：最新完整管理月」檢視設備產能與稼動率。</div>';
 
-    $('signoffContent').innerHTML = `<div class="callout"><b>未完整管理月簽核：</b>目前訂單資料涵蓋至 11/10。每日簽核最新記錄至 11/10。請切換至「選項 A」查看 10 月完整管理月簽核。</div>`;
+    const covOrdersMD = (DYN?.sourcesMeta?.orders?.coverageEnd || DYN?.sourcesMeta?.orders?.latest || '2026-11-22').slice(5).replace('-','/');
+    const covSignMD = (DYN?.sourcesMeta?.signoff?.latest || '2026-11-22').slice(5).replace('-','/');
+    $('signoffContent').innerHTML = `<div class="callout"><b>未完整管理月簽核：</b>目前訂單資料涵蓋至 ${covOrdersMD}。每日簽核最新記錄至 ${covSignMD}。請切換至「選項 A」查看 10 月完整管理月簽核。</div>`;
 
     $('shipmentContent').innerHTML = '<div class="warn"><b>目前尚無未完整管理月資料：</b>請點選「選項 A：最新完整管理月」檢視未出貨追蹤。</div>';
 
@@ -3495,7 +3507,7 @@ function render(){
       avgWaitDays: 0
     };
 
-    const shipRegionNote = mergedShip ? mergedShip.scopeNote : '五大區合計';
+    const shipRegionNote = mergedShip ? (mergedShip.scopeNote || mergedShip.summary?.scopeNote || '五大區合計') : '五大區合計';
     const snapshotDate = shipSource?.snapshotDate || '';
 
     // 防護一與防護二：限制在 mode === 'month'，並依 snapshotDate 是否為結月日 25 日動態判斷完整性
@@ -3649,7 +3661,7 @@ ${shipCalloutHtml}`;
 
   let insight=`${modeText}現場簽核占比 <b>${signOnsiteShare.toFixed(2)}%</b>，副理帳號占比 <b>${signManagerShare.toFixed(2)}%</b>。${weekendSignNote}`;
 
-  let updateCutoff = DYN?.sourcesMeta?.signoff?.latest ? fmtDate(DYN.sourcesMeta.signoff.latest).slice(5) : ((typeof LATEST !== 'undefined' && LATEST) ? fmtDate(LATEST).slice(5) : '11/10');
+  let updateCutoff = DYN?.sourcesMeta?.signoff?.latest ? fmtDate(DYN.sourcesMeta.signoff.latest).slice(5) : ((typeof LATEST !== 'undefined' && LATEST) ? fmtDate(LATEST).slice(5) : '11/22');
 
   const signoffTableNote = (mode === 'day' || mode === 'week') 
     ? `<div style="margin-top:14px;padding:8px 12px;background:#f8fafc;border-left:3px solid #6366f1;font-size:12px;color:#475569;">
@@ -4529,12 +4541,21 @@ add('target','營業目標｜優先追蹤達成率較低的區域',`${cardPeriod
 
   } else {
 
-    let custCandidates = s?.top_customers || [];
-    if (!custCandidates.length && (mode === 'week' || mode === 'day')) {
-      const custSource = (typeof CUSTOMER_DRILLDOWN !== 'undefined' ? CUSTOMER_DRILLDOWN : (typeof window !== 'undefined' ? window.CUSTOMER_DRILLDOWN : null)) || {};
-      custCandidates = custSource?.[mode]?.[key]?.topClients || [];
+    let custCandidates = [];
+    const custSource = (typeof CUSTOMER_DRILLDOWN !== 'undefined' ? CUSTOMER_DRILLDOWN : (typeof window !== 'undefined' ? window.CUSTOMER_DRILLDOWN : null)) || {};
+    if (mode === 'month' || mode === 'ytd') {
+      const custMode = (mode === 'ytd') ? 'ytd' : 'month';
+      const cPool = custSource[custMode] || {};
+      const cData = cPool[key] || null;
+      const mergedCust = (typeof getMergedCustomerData === 'function') ? getMergedCustomerData(cData, currentCustomerBranches, mode) : null;
+      custCandidates = (mergedCust && mergedCust.topClients) ? mergedCust.topClients : (cData?.topClients || []);
+    } else {
+      custCandidates = custSource?.[mode]?.[key]?.topClients || s?.top_customers || [];
     }
-    const cs=custCandidates.filter(c=>c.net>0&&c.gm!=null&&s?.gm!=null&&c.gm<s.gm).sort((a,b)=>b.net-a.net);
+    const scopeGm = (mode === 'month' || mode === 'ytd') && typeof getMergedCustomerData === 'function' && custSource[(mode === 'ytd') ? 'ytd' : 'month']?.[key]
+      ? (getMergedCustomerData(custSource[(mode === 'ytd') ? 'ytd' : 'month'][key], currentCustomerBranches, mode)?.companyGm ?? s?.gm)
+      : s?.gm;
+    const cs = custCandidates.filter(c => c.net > 0 && c.gm != null && scopeGm != null && c.gm < scopeGm).sort((a,b) => b.net - a.net);
 
     add('customer','核心客戶｜先查主要客戶的毛利差異',`已提供的主要客戶名單中，${cs.length} 戶毛利率低於本期整體 ${(s?.gm!=null?s.gm:0).toFixed(2)}%。`,'依下列候選名單查報價、成本與產品組合，逐戶提出維持條件或改善方案。','各客戶負責業務','建議 7 日內回報原因；次期以同客戶營收、毛利額與毛利率驗收。','只有各期主要客戶截選，不能據此推算完整客戶衰退率或流失。',cs.map(c=>[c.name,money(c.net),'毛利 '+money(c.margin)+'／'+(c.gm!=null?c.gm.toFixed(2)+'%':'-')]),['主要客戶','訂單淨額','毛利／毛利率'],null,{customerMonth:((mode==='week'||mode==='day')?key:mk),cutoffDate:(s?.end || (typeof selected !== 'undefined' ? selected : picker.value))});
 
@@ -4638,8 +4659,8 @@ const style=document.createElement('style');style.textContent='.decision-grid{di
 const board=document.createElement('section');board.className='block';board.id='decisionBoard';document.querySelector('main').prepend(board);
 
 function boardRender(){
-  const ordLatestFmt = (DYN?.sourcesMeta?.orders?.latest || '2026-11-10').replaceAll('-', '/');
-  const signLatestFmt = (DYN?.sourcesMeta?.signoff?.latest || '2026-11-10').replaceAll('-', '/');
+  const ordLatestFmt = (DYN?.sourcesMeta?.orders?.latest || '2026-11-22').replaceAll('-', '/');
+  const signLatestFmt = (DYN?.sourcesMeta?.signoff?.latest || '2026-11-22').replaceAll('-', '/');
   board.innerHTML='<div class="block-title">主管決策｜數據 → 查因 → 行動 → 驗收</div><div class="content"><div class="warn">已接入標準化動態管線（支援 2025/12/26 至 ' + ordLatestFmt + ' 每日/每週/每月/YTD 動態重算，簽核至 ' + signLatestFmt + '）。正式營業實績與設備實際產量已更新至 2026 年 10 月。優先序為建議工作順序；期限、責任單位與毛利試算均待主管核定。</div><div class="decision-grid">'+decisions().map((d,i)=>`<article class="decision-card"><span class="tag blue">建議順序 ${i+1}</span><h3>${esc(d.title)}</h3><p>${esc(d.evidence)}</p><p><b>下一步：</b>${esc(d.action)}</p><button data-decision="${d.id}">查看數據與建立追蹤</button></article>`).join('')+'</div></div>';
 }
 
@@ -4764,7 +4785,7 @@ function renderTargetDrilldownHtml(mode,drillMonth,targetRegions,selectedReg,cut
   const cardTitleDesc = (mode === 'ytd')
     ? (reg === '桃H'
         ? (data
-            ? `自 2026/09/26 起追蹤之出貨累計（截至 ${(data.period ? data.period.split('~')[1]?.trim() : (DYN?.sourcesMeta?.orders?.latest || '2026-11-10').replaceAll('-','/'))}）`
+            ? `自 2026/09/26 起追蹤之出貨累計（截至 ${(data.period ? data.period.split('~')[1]?.trim() : (DYN?.sourcesMeta?.orders?.latest || '2026-11-22').replaceAll('-','/'))}）`
             : '專案追蹤區出貨累計（此期間責任區明細尚未提供）')
         : 'YTD 累計官方核定目標與營業實績')
     : (isFallbackMonth ? `官方核定目標與營業實績（最近期：${Number(targetMonth.slice(5))}月已公告月報基準）` : `${Number(targetMonth.slice(5))}月官方核定目標與營業實績`);

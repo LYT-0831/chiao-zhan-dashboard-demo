@@ -2383,7 +2383,14 @@ function getEquipData(equipMonth, view){
 
   const EXCLUDED_EQUIP = new Set(['L001','E003','E004','E005','F001','G004','B022','B023','B024']);
 
-  const raw = EQUIP[equipMonth] || EQUIP['2026-09'] || EQUIP['2026-08'] || [];
+  let raw = EQUIP[equipMonth];
+  if (!raw || !raw.length) {
+    const validMonths = Object.keys(typeof EQUIP !== 'undefined' ? EQUIP : {})
+      .filter(m => (!equipMonth || m <= equipMonth) && Array.isArray(EQUIP[m]) && EQUIP[m].length > 0)
+      .sort();
+    const fallbackM = validMonths[validMonths.length - 1] || '2026-10';
+    raw = EQUIP[fallbackM] || [];
+  }
 
   const arr = raw.filter(x => !EXCLUDED_EQUIP.has(x.code));
 
@@ -3587,7 +3594,7 @@ function render(){
           const priorWo = mergedPrior.summary.completedUnshippedWorkOrders || 0;
           const priorOrd = mergedPrior.summary.orders || 0;
           const priorAmt = mergedPrior.summary.completedUnshippedAmt || 0;
-          shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;font-size:12px;"><b>ℹ️ 未完整管理月存量提示：</b>${esc(key)} 管理月尚未完整，資料統計至 ${esc(snapshotDate)}。較前期（${priorSnap} 期末 ${fmt(priorWo)} 工單／${fmt(priorOrd)} 訂單／${money(priorAmt)}），${shipRegionNote}完工未出貨${diffWoTxt}、${diffOrdTxt}、${diffAmtTxt}。因本期天數未達完整月，存量增減僅反映兩時點快照淨差，不呈現月增率（MoM %），亦不描述為已出貨消化。</div>`;
+          shipCalloutHtml = `<div class="warn" style="margin-top:8px;background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;font-size:12px;line-height:1.7;"><b>ℹ️ 未完整管理月存量提示：</b>${esc(key)} 管理月尚未完整，資料統計至 ${esc(snapshotDate)}。較前期（${priorSnap} 期末 ${fmt(priorWo)} 工單／${fmt(priorOrd)} 訂單／${money(priorAmt)}），${shipRegionNote}完工未出貨${diffWoTxt}、${diffOrdTxt}、${diffAmtTxt}。因本期天數未達完整月，存量增減僅反映兩時點快照淨差，不呈現月增率（MoM %），亦不描述為已出貨消化。<br><span style="margin-top:4px;display:inline-block;color:#0c4a6e;">前期採先前 ERP 匯出資料重建並保存的歷史基準；本期採 11/22 最新完整 ERP。兩期資料版本不同，差額可能包含歷史補登或作廢影響，不宜直接視為純粹的營運改善。</span></div>`;
         }
       }
     }
@@ -3678,7 +3685,12 @@ ${shipCalloutHtml}`;
   let mkey = mgmtKey(s?.end || selected);
 
   let isEquipMissing = (!EQUIP[mkey] || !EQUIP[mkey].length);
-  let equipMonth = EQUIP[mkey] ? mkey : (EQUIP['2026-10'] ? '2026-10' : (EQUIP['2026-09'] ? '2026-09' : '2026-08'));
+  const availableEquipTabMonths = Object.keys(typeof EQUIP !== 'undefined' ? EQUIP : {})
+    .filter(m => m <= mkey && Array.isArray(EQUIP[m]) && EQUIP[m].length > 0)
+    .sort();
+  let equipMonth = isEquipMissing
+    ? (availableEquipTabMonths[availableEquipTabMonths.length - 1] || '2026-10')
+    : mkey;
 
   let rawArr=EQUIP[equipMonth]||[];
 
@@ -4584,23 +4596,20 @@ add('target','營業目標｜優先追蹤達成率較低的區域',`${cardPeriod
 
  const EXCLUDED_EQUIP = new Set(['L001','E003','E004','E005','F001','G004','B022','B023','B024']);
 
- let equipMonth=mk;
+ const availableEquipMonths = Object.keys(typeof EQUIP !== 'undefined' ? EQUIP : {})
+   .filter(m => m <= mk && Array.isArray(EQUIP[m]) && EQUIP[m].length > 0)
+   .sort();
 
- let rawEquipList=EQUIP[mk];
+ const isEquipMissing = (!EQUIP[mk] || !EQUIP[mk].length);
+ let equipMonth = isEquipMissing
+   ? (availableEquipMonths[availableEquipMonths.length - 1] || '2026-10')
+   : mk;
+ let rawEquipList = EQUIP[equipMonth] || [];
+ let equipNote = isEquipMissing
+   ? `（當月設備月報待提供，暫以最新已確認 ${equipMonth} 產量追蹤）`
+   : '';
 
- let equipNote='';
-
- if(!rawEquipList||!rawEquipList.length){
-
-   equipMonth='2026-08';
-
-   rawEquipList=EQUIP[equipMonth]||[];
-
-   equipNote='（當月設備月報待提供，暫以最近已確認產量追蹤）';
-
- }
-
- let equipList=rawEquipList.filter(e=>!EXCLUDED_EQUIP.has(e.code));
+ let equipList = rawEquipList.filter(e => !EXCLUDED_EQUIP.has(e.code));
 
  if(mode === 'month' || mode === 'ytd'){
  const eq=[...equipList].sort((a,b)=>a.rate-b.rate);
@@ -7515,7 +7524,12 @@ const priorOpen=openImprove;openImprove=function(id){
 
  const drillMonth=(mode==='week'||mode==='day')?(summaryObj.key||selected):(d.drillMonth||d.customerMonth||d.newCustMonth||mgmtKey(summaryObj.s?.end || summaryObj.key || selected));
 
- const equipMonth=(typeof EQUIP!=='undefined'&&EQUIP[drillMonth])?drillMonth:'2026-09';
+ const availableEquipDrillMonths = Object.keys(typeof EQUIP !== 'undefined' ? EQUIP : {})
+   .filter(m => m <= drillMonth && Array.isArray(EQUIP[m]) && EQUIP[m].length > 0)
+   .sort();
+ const equipMonth = (typeof EQUIP !== 'undefined' && EQUIP[drillMonth])
+   ? drillMonth
+   : (availableEquipDrillMonths[availableEquipDrillMonths.length - 1] || '2026-10');
 
  const cutoffDate=d.cutoffDate||summaryObj.s?.end || selected;
 

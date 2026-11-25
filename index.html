@@ -3627,7 +3627,7 @@ function render(){
 <div class="kpis">
   <div class="kpi">
     <small>${shipRegionNote}完工未出貨${snapshotDate ? `（快照基準日 ${fmtDate(snapshotDate).slice(5)}）` : ''}</small>
-    <b class="red">${fmt(u.completedUnshippedWorkOrders)} 工單</b> <span style="font-size:13px;font-weight:normal;color:#64748b;">(${fmt(u.orders)} 訂單)</span>
+    <b class="red">${fmt(u.orders)} 訂單</b><span style="font-size:13px;font-weight:normal;color:#64748b;">（${fmt(u.completedUnshippedWorkOrders)} 工單）</span>
     ${trendHtml}
     <div class="note">完工未出金額 <b style="color:#1d4ed8;">${money(u.completedUnshippedAmt)}</b></div>
     <div class="note" style="margin-top:2px;font-size:11px;color:#64748b;">整單待出總額 ${money(u.totalOrderPendingAmt)}</div>
